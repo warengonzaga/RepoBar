@@ -214,9 +214,12 @@ struct AdvancedSettingsView: View {
                 self.appState.refreshScheduler.forceRefresh()
             }
             Toggle("Show diagnostics", isOn: self.$session.settings.diagnosticsEnabled)
-                .onChange(of: self.session.settings.diagnosticsEnabled) { _, _ in
+                .onChange(of: self.session.settings.diagnosticsEnabled) { _, newValue in
                     self.appState.persistSettings()
-                    Task { await self.loadDiagnostics() }
+                    Task {
+                        await DiagnosticsLogger.shared.setEnabled(newValue)
+                        await self.loadDiagnostics()
+                    }
                 }
             Section("Diagnostics") {
                 LabeledContent("API host") {

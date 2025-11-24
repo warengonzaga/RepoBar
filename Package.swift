@@ -23,8 +23,13 @@ let package = Package(
                 .product(name: "AppAuth", package: "AppAuth-iOS"),
                 .product(name: "Apollo", package: "apollo-ios"),
             ],
+            exclude: ["Resources/Info.plist"],
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency"),
+                .unsafeFlags([
+                    "-Xlinker", "-sectcreate", "-Xlinker", "__TEXT", "-Xlinker", "__info_plist",
+                    "-Xlinker", "Sources/RepoBar/Resources/Info.plist",
+                ]),
             ]),
         .testTarget(
             name: "RepoBarTests",
