@@ -25,15 +25,12 @@ let package = Package(
             ],
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency"),
-            ]
-        ),
+            ]),
         .testTarget(
             name: "RepoBarTests",
             dependencies: ["RepoBar"],
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency"),
                 .enableExperimentalFeature("SwiftTesting"),
-            ]
-        ),
-    ]
-)
+            ]),
+    ])

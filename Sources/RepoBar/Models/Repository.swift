@@ -31,8 +31,7 @@ struct Repository: Identifiable, Equatable {
             latestRelease: self.latestRelease,
             latestActivity: self.latestActivity,
             traffic: self.traffic,
-            heatmap: self.heatmap
-        )
+            heatmap: self.heatmap)
     }
 }
 

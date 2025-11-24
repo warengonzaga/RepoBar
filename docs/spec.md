@@ -145,9 +145,11 @@ Done
 7) Launch/update: launch-at-login helper; Sparkle menu; single-instance enforced.
 8) Tests: PKCE + heatmap reshape + backoff/refresh/cert error mapping + loopback parser (Swift Testing).
 9) Error-handling: per-endpoint rate-limit/backoff propagation to cards, repo error/rate-limit copy preserved on reorder; GraphQL enrichment merged with REST.
-10) UX polish: drag-reorder hints, context-menu move up/down actions, login host surfaced in menus; enterprise host validation + TLS trust messaging; diagnostics section in Advanced settings.
+10) UX polish: drag-reorder hints, context-menu move up/down actions, login host surfaced in menus; enterprise host validation + TLS trust messaging; diagnostics section in Advanced settings; custom colored menubar glyph.
+11) Tooling: swiftformat/swiftlint aligned with Trimmy; pnpm scripts for format/lint/check/test/build/start/restart/stop/codegen; Apollo codegen config + script scaffold.
+12) Additional tests: repo view model mapping, heatmap padding, grid reorder helpers.
 
 TODO
-- Additional tests (repo model mapping from API, reorder helpers, contribution image/heatmap sizing).
+- Additional tests (repo model mapping from API, contribution image/heatmap sizing).
 - Accessibility: keyboard focus order in menu window, announce rate-limit banners, check card a11y labels.
 - Logging/diagnostics toggle and cache reset UI polish.

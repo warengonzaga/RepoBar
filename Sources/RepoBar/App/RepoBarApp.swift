@@ -39,9 +39,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     }
 }
 
-private extension AppDelegate {
+extension AppDelegate {
     /// Prevent multiple instances when LS UI flag is unavailable under SwiftPM.
-    func ensureSingleInstance() -> Bool {
+    private func ensureSingleInstance() -> Bool {
         guard let bundleID = Bundle.main.bundleIdentifier else { return true }
         let others = NSWorkspace.shared.runningApplications.filter {
             $0.bundleIdentifier == bundleID && !$0.isEqual(NSRunningApplication.current)
@@ -89,8 +89,7 @@ final class AppState: ObservableObject {
             } else {
                 try await self.github.defaultRepositories(
                     limit: self.session.settings.repoDisplayLimit,
-                    for: self.currentUserNameOrEmpty()
-                )
+                    for: self.currentUserNameOrEmpty())
             }
             let trimmed = Array(repos.prefix(self.session.settings.repoDisplayLimit))
             await MainActor.run {

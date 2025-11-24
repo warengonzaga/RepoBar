@@ -61,8 +61,7 @@ final class OAuthCoordinator {
         let tokens = OAuthTokens(
             accessToken: decoded.accessToken,
             refreshToken: decoded.refreshToken ?? "",
-            expiresAt: Date().addingTimeInterval(TimeInterval(decoded.expiresIn ?? 3600))
-        )
+            expiresAt: Date().addingTimeInterval(TimeInterval(decoded.expiresIn ?? 3600)))
         try self.tokenStore.save(tokens: tokens)
         server.stop()
     }
@@ -98,8 +97,7 @@ final class OAuthCoordinator {
         tokens = OAuthTokens(
             accessToken: decoded.accessToken,
             refreshToken: decoded.refreshToken ?? tokens.refreshToken,
-            expiresAt: expires
-        )
+            expiresAt: expires)
         try self.tokenStore.save(tokens: tokens)
         return tokens
     }

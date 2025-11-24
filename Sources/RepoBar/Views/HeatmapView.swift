@@ -24,9 +24,9 @@ struct HeatmapView: View {
     private func color(for count: Int) -> Color {
         switch count {
         case 0: Color(nsColor: .controlBackgroundColor)
-        case 1 ... 3: Color(red: 0.78, green: 0.93, blue: 0.79)
-        case 4 ... 7: Color(red: 0.51, green: 0.82, blue: 0.56)
-        case 8 ... 12: Color(red: 0.2, green: 0.65, blue: 0.32)
+        case 1...3: Color(red: 0.78, green: 0.93, blue: 0.79)
+        case 4...7: Color(red: 0.51, green: 0.82, blue: 0.56)
+        case 8...12: Color(red: 0.2, green: 0.65, blue: 0.32)
         default: Color(red: 0.12, green: 0.45, blue: 0.2)
         }
     }
@@ -46,7 +46,7 @@ enum HeatmapLayout {
             padded.append(contentsOf: Array(repeating: HeatmapCell(date: Date(), count: 0), count: missing))
         }
         return stride(from: 0, to: padded.count, by: rows).map { index in
-            Array(padded[index ..< min(index + rows, padded.count)])
+            Array(padded[index..<min(index + rows, padded.count)])
         }
     }
 }

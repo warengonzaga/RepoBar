@@ -143,14 +143,13 @@ struct RepoGridView: View {
                         repo: repo,
                         unpin: { self.unpin(repo) },
                         moveUp: { self.moveStep(repo: repo, in: ordered, direction: -1) },
-                        moveDown: { self.moveStep(repo: repo, in: ordered, direction: 1) }
-                    )
-                    .onDrag {
-                        let provider = NSItemProvider(object: NSString(string: repo.id))
-                        provider.suggestedName = repo.id
-                        return provider
-                    }
-                    .onDrop(of: [.text], delegate: DragReorderDelegate(item: repo, items: ordered, move: self.move))
+                        moveDown: { self.moveStep(repo: repo, in: ordered, direction: 1) })
+                        .onDrag {
+                            let provider = NSItemProvider(object: NSString(string: repo.id))
+                            provider.suggestedName = repo.id
+                            return provider
+                        }
+                        .onDrop(of: [.text], delegate: DragReorderDelegate(item: repo, items: ordered, move: self.move))
                 }
             }
             .padding(.vertical, 4)

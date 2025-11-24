@@ -101,7 +101,7 @@ struct AccountSettingsView: View {
             }
 
             Section("Callback") {
-                Stepper(value: self.$port, in: 1025 ... 65535) {
+                Stepper(value: self.$port, in: 1025...65535) {
                     Text("Loopback port: \(self.port)")
                 }
             }
@@ -144,8 +144,7 @@ struct AccountSettingsView: View {
                     clientSecret: self.clientSecret,
                     pemPath: self.pemPath,
                     host: self.session.settings.enterpriseHost ?? self.session.settings.githubHost,
-                    loopbackPort: self.port
-                )
+                    loopbackPort: self.port)
                 if let user = try? await appState.github.currentUser() {
                     self.session.account = .loggedIn(user)
                     self.session.lastError = nil

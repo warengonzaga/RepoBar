@@ -48,8 +48,7 @@ actor GraphQLClient {
               }
             }
             """,
-            variables: ["owner": owner, "name": name]
-        )
+            variables: ["owner": owner, "name": name])
 
         var request = URLRequest(url: endpoint)
         request.httpMethod = "POST"
@@ -77,8 +76,7 @@ actor GraphQLClient {
                     title: text.prefix(80) + (text.count > 80 ? "…" : ""),
                     actor: actor,
                     date: date,
-                    url: url
-                )
+                    url: url)
             }
             return nil
         }
@@ -87,8 +85,7 @@ actor GraphQLClient {
             release: release,
             openIssues: repo.issues.totalCount,
             openPulls: repo.pullRequests.totalCount,
-            activity: activity
-        )
+            activity: activity)
     }
 }
 

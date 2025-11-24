@@ -10,8 +10,7 @@ final class SparkleController {
         self.updaterController = SPUStandardUpdaterController(
             startingUpdater: true,
             updaterDelegate: nil,
-            userDriverDelegate: nil
-        )
+            userDriverDelegate: nil)
     }
 
     func checkForUpdates() {

@@ -1,5 +1,5 @@
-@testable import RepoBar
 import Testing
+@testable import RepoBar
 
 struct PKCETests {
     @Test

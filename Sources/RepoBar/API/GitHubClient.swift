@@ -74,42 +74,34 @@ actor GitHubClient {
                 latestRelease: nil,
                 latestActivity: nil,
                 traffic: nil,
-                heatmap: []
-            )
+                heatmap: [])
         }
 
         async let issuesResult: Result<Int, Error> = self.capture { try await self.openCount(
             owner: owner,
             name: name,
-            type: .issue
-        ) }
+            type: .issue) }
         async let prsResult: Result<Int, Error> = self.capture { try await self.openCount(
             owner: owner,
             name: name,
-            type: .pullRequest
-        ) }
+            type: .pullRequest) }
         async let releaseResult: Result<Release, Error> = self.capture { try await self.latestRelease(
             owner: owner,
-            name: name
-        ) }
+            name: name) }
         async let ciResult: Result<CIStatus, Error> = self.capture { try await self.ciStatus(owner: owner, name: name) }
         async let activityResult: Result<ActivityEvent, Error> = self.capture { try await self.latestActivity(
             owner: owner,
-            name: name
-        ) }
+            name: name) }
         async let trafficResult: Result<TrafficStats, Error> = self.capture { try await self.trafficStats(
             owner: owner,
-            name: name
-        ) }
+            name: name) }
         async let heatmapResult: Result<[HeatmapCell], Error> = self.capture { try await self.commitHeatmap(
             owner: owner,
-            name: name
-        ) }
+            name: name) }
         async let graphResult: Result<GraphRepoSnapshot, Error> = self
             .capture { try await self.graphQL.fetchRepoSnapshot(
                 owner: owner,
-                name: name
-            ) }
+                name: name) }
 
         let issues = await self.value(from: issuesResult, into: &accumulator) ?? details.openIssuesCount
         let pulls = await self.value(from: prsResult, into: &accumulator) ?? 0
@@ -140,8 +132,7 @@ actor GitHubClient {
             latestRelease: finalRelease,
             latestActivity: finalActivity,
             traffic: traffic,
-            heatmap: heatmap
-        )
+            heatmap: heatmap)
     }
 
     func currentUser() async throws -> UserIdentity {
@@ -161,8 +152,7 @@ actor GitHubClient {
         let token = try await validAccessToken()
         var components = URLComponents(
             url: apiHost.appending(path: "/search/repositories"),
-            resolvingAgainstBaseURL: false
-        )!
+            resolvingAgainstBaseURL: false)!
         components.queryItems = [URLQueryItem(name: "q", value: query), URLQueryItem(name: "per_page", value: "5")]
         let (data, _) = try await authorizedGet(url: components.url!, token: token)
         let decoded = try jsonDecoder.decode(SearchResponse.self, from: data)
@@ -180,8 +170,7 @@ actor GitHubClient {
                 latestRelease: nil,
                 latestActivity: nil,
                 traffic: nil,
-                heatmap: []
-            )
+                heatmap: [])
         }
     }
 
@@ -237,8 +226,7 @@ actor GitHubClient {
         let token = try await validAccessToken()
         var components = URLComponents(
             url: apiHost.appending(path: "/repos/\(owner)/\(name)/actions/runs"),
-            resolvingAgainstBaseURL: false
-        )!
+            resolvingAgainstBaseURL: false)!
         components.queryItems = [URLQueryItem(name: "per_page", value: "1")]
         let (data, _) = try await authorizedGet(url: components.url!, token: token)
         let runs = try jsonDecoder.decode(ActionsRunsResponse.self, from: data)
@@ -255,14 +243,14 @@ actor GitHubClient {
         let token = try await validAccessToken()
         async let issueComment = self.latestComment(
             from: self.apiHost.appending(path: "/repos/\(owner)/\(name)/issues/comments"),
-            token: token
-        )
+            token: token)
         async let reviewComment = self.latestComment(
             from: self.apiHost.appending(path: "/repos/\(owner)/\(name)/pulls/comments"),
-            token: token
-        )
-        let candidates = await [try? issueComment, try? reviewComment].compactMap(\.self)
-        guard let newest = candidates.sorted(by: { $0.date > $1.date }).first
+            token: token)
+        let candidates = await [try? issueComment, try? reviewComment]
+            .compactMap(\.self)
+            .sorted(by: { $0.date > $1.date })
+        guard let newest = candidates.first
         else { throw URLError(.cannotParseResponse) }
         return newest
     }
@@ -281,8 +269,7 @@ actor GitHubClient {
             title: comment.bodyPreview,
             actor: comment.user.login,
             date: comment.createdAt,
-            url: comment.htmlUrl
-        )
+            url: comment.htmlUrl)
     }
 
     private func trafficStats(owner: String, name: String) async throws -> TrafficStats {
@@ -300,11 +287,10 @@ actor GitHubClient {
         let token = try await validAccessToken()
         let (data, _) = try await authorizedGet(
             url: apiHost.appending(path: "/repos/\(owner)/\(name)/stats/commit_activity"),
-            token: token
-        )
+            token: token)
         let weeks = try jsonDecoder.decode([CommitActivityWeek].self, from: data)
         return weeks.flatMap { week in
-            zip(0 ..< 7, week.days).map { offset, count in
+            zip(0..<7, week.days).map { offset, count in
                 let date = Date(timeIntervalSince1970: TimeInterval(week.weekStart + offset * 86400))
                 return HeatmapCell(date: date, count: count)
             }
@@ -314,19 +300,17 @@ actor GitHubClient {
     private func authorizedGet(
         url: URL,
         token: String,
-        allowedStatuses: Set<Int> = [200, 304]
-    ) async throws -> (Data, HTTPURLResponse) {
+        allowedStatuses: Set<Int> = [200, 304]) async throws -> (Data, HTTPURLResponse)
+    {
         if await self.etagCache.isRateLimited(), let until = await etagCache.rateLimitUntil() {
             throw GitHubAPIError.rateLimited(
                 until: until,
-                message: "GitHub rate limit hit; resets \(RelativeFormatter.string(from: until, relativeTo: Date()))."
-            )
+                message: "GitHub rate limit hit; resets \(RelativeFormatter.string(from: until, relativeTo: Date())).")
         }
         if let cooldown = await backoff.cooldown(for: url) {
             throw GitHubAPIError.serviceUnavailable(
                 retryAfter: cooldown,
-                message: "Cooling down until \(RelativeFormatter.string(from: cooldown, relativeTo: Date()))."
-            )
+                message: "Cooling down until \(RelativeFormatter.string(from: cooldown, relativeTo: Date())).")
         }
 
         var request = URLRequest(url: url)
@@ -350,8 +334,7 @@ actor GitHubClient {
             let message = "GitHub is preparing stats; retry \(retryText)."
             throw GitHubAPIError.serviceUnavailable(
                 retryAfter: retryAfter,
-                message: message
-            )
+                message: message)
         }
 
         if status == 403 || status == 429 {
@@ -367,8 +350,7 @@ actor GitHubClient {
         guard allowedStatuses.contains(status) else {
             throw GitHubAPIError.badStatus(
                 code: status,
-                message: HTTPURLResponse.localizedString(forStatusCode: status)
-            )
+                message: HTTPURLResponse.localizedString(forStatusCode: status))
         }
 
         if let etag = response.value(forHTTPHeaderField: "ETag") {
