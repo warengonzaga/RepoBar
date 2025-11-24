@@ -16,20 +16,21 @@ struct MenuContentView: View {
             if let reset = session.rateLimitReset {
                 RateLimitBanner(reset: reset)
             }
-            if let error = session.lastError {
+            if let error = session.lastError, session.account != .loggedOut {
                 ErrorBanner(message: error)
             }
 
             HStack {
-                Text("Repositories")
+                Label("Repositories", systemImage: "shippingbox.fill")
                     .font(.headline)
                 Spacer()
                 Button {
                     self.showingAddRepo = true
                 } label: {
                     Label("Add", systemImage: "plus")
+                        .labelStyle(.iconOnly)
                 }
-                .buttonStyle(.borderless)
+                .buttonStyle(.bordered)
             }
             if !self.session.settings.pinnedRepositories.isEmpty {
                 Text("Drag cards or use the ... menu to reorder pinned repos.")
@@ -38,7 +39,12 @@ struct MenuContentView: View {
             }
 
             if self.viewModels().isEmpty {
-                EmptyStateView()
+                EmptyStateView(
+                    isLoggedIn: {
+                        if case .loggedIn = self.session.account { return true }
+                        return false
+                    }(),
+                    onLogin: self.openLogin)
             } else {
                 RepoGridView(repositories: self.viewModels(), unpin: self.unpin, move: self.movePin)
             }
@@ -73,21 +79,43 @@ struct MenuContentView: View {
         self.appState.persistSettings()
         Task { await self.appState.refresh() }
     }
+
+    private func openLogin() {
+        NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
+    }
 }
 
 private struct EmptyStateView: View {
+    let isLoggedIn: Bool
+    let onLogin: () -> Void
+
     var body: some View {
-        VStack(spacing: 8) {
-            Image(systemName: "tray")
-                .font(.largeTitle)
-                .foregroundStyle(.secondary)
+        VStack(spacing: 12) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(.regularMaterial)
+                    .frame(width: 90, height: 90)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12, style: .continuous)
+                            .stroke(Color.gray.opacity(0.1), lineWidth: 1))
+                Image(systemName: "tray.fill")
+                    .font(.system(size: 28, weight: .semibold))
+                    .foregroundStyle(.secondary)
+            }
             Text("No repositories yet")
                 .font(.headline)
             Text("Pin a repository or sign in to load your recent activity.")
                 .font(.caption)
                 .foregroundStyle(.secondary)
+            if !self.isLoggedIn {
+                Button("Sign in to GitHub") {
+                    self.onLogin()
+                }
+                .buttonStyle(.borderedProminent)
+            }
         }
         .frame(maxWidth: .infinity, minHeight: 200)
+        .padding(.vertical, 16)
     }
 }
 
@@ -100,9 +128,10 @@ private struct RateLimitBanner: View {
             Spacer()
         }
         .font(.caption)
-        .padding(8)
-        .background(Color.yellow.opacity(0.15))
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .padding(.horizontal, 12)
+        .padding(.vertical, 10)
+        .background(Color.yellow.opacity(0.18))
+        .clipShape(Capsule(style: .continuous))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Rate limited. Resets \(RelativeFormatter.string(from: self.reset, relativeTo: Date()))")
     }
@@ -111,17 +140,19 @@ private struct RateLimitBanner: View {
 private struct ErrorBanner: View {
     let message: String
     var body: some View {
-        HStack {
-            Image(systemName: "exclamationmark.triangle")
-                .foregroundStyle(.red)
+        HStack(spacing: 8) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .foregroundStyle(.white)
             Text(self.message)
                 .lineLimit(2)
+                .foregroundStyle(.white)
             Spacer()
         }
         .font(.caption)
-        .padding(8)
-        .background(Color.red.opacity(0.12))
-        .clipShape(RoundedRectangle(cornerRadius: 8, style: .continuous))
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(Color.red.opacity(0.85))
+        .clipShape(Capsule(style: .continuous))
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Error: \(self.message)")
     }

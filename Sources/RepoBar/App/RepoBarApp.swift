@@ -83,6 +83,13 @@ final class AppState: ObservableObject {
 
     func refresh() async {
         do {
+            if self.auth.loadTokens() == nil {
+                await MainActor.run {
+                    self.session.repositories = []
+                    self.session.lastError = nil
+                }
+                return
+            }
             let repoNames = self.session.settings.pinnedRepositories
             let repos: [Repository] = if !repoNames.isEmpty {
                 try await self.fetchPinned(repoNames: repoNames)

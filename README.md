@@ -23,7 +23,7 @@ Requirements: Swift 6.2 toolchain, Xcode 26+, `swiftformat`, `swiftlint`, `pnpm`
 
 ## Notes
 
-- Menubar icon is a custom RepoBar glyph with green/yellow/red/gray backgrounds to reflect aggregate CI/login state.
+- Menubar icon is a tinted, macOS-native template glyph with a tiny status badge for aggregate CI/login state.
 - Left click opens rich repo grid; right click opens classic menu (Refresh, Preferences, Updates, Logout, Quit).
 - Pins reorder via drag or card menu; display count and refresh interval configurable in Settings.
 - Advanced tab shows diagnostics (API host, last error, rate-limit reset).
