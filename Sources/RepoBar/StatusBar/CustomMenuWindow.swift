@@ -2,8 +2,11 @@ import AppKit
 import SwiftUI
 
 /// Lightweight floating window used for the rich left-click view.
+@MainActor
 final class CustomMenuWindow: NSWindow {
     private var hostingView: NSHostingView<AnyView>?
+    private var eventMonitor: Any?
+    private weak var statusBarButton: NSStatusBarButton?
     var onShow: (() -> Void)?
     var onHide: (() -> Void)?
 
@@ -24,8 +27,10 @@ final class CustomMenuWindow: NSWindow {
     }
 
     func show(relativeTo button: NSStatusBarButton) {
-        guard button.window?.screen != nil else { return }
-        let buttonFrame = button.window?.convertToScreen(button.frame) ?? .zero
+        self.statusBarButton = button
+        guard let window = button.window, window.screen != nil else { return }
+
+        let buttonFrame = window.convertToScreen(button.frame)
         let windowSize = frameRect(forContentRect: frame).size
         let origin = NSPoint(
             x: buttonFrame.midX - windowSize.width / 2,
@@ -35,14 +40,64 @@ final class CustomMenuWindow: NSWindow {
         makeKey()
         self.onShow?()
         NSApp.activate(ignoringOtherApps: true)
+        self.startEventMonitoring()
     }
 
     func hide() {
         orderOut(nil)
+        self.stopEventMonitoring()
         self.onHide?()
     }
 
     var isWindowVisible: Bool {
         isVisible
+    }
+
+    override func resignKey() {
+        super.resignKey()
+        self.hide()
+    }
+
+    deinit {
+        MainActor.assumeIsolated {
+            self.stopEventMonitoring()
+        }
+    }
+
+    // MARK: - Event monitoring
+
+    private func startEventMonitoring() {
+        self.stopEventMonitoring()
+        guard self.isVisible else { return }
+
+        self.eventMonitor = NSEvent.addGlobalMonitorForEvents(matching: [.leftMouseDown, .rightMouseDown]) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                let mouseLocation = NSEvent.mouseLocation
+
+                // Allow re-clicking the status bar button to dismiss.
+                if let button = self.statusBarButton,
+                   let buttonWindow = button.window
+                {
+                    let buttonFrame = buttonWindow.convertToScreen(button.convert(button.bounds, to: nil))
+                    if buttonFrame.contains(mouseLocation) {
+                        self.hide()
+                        return
+                    }
+                }
+
+                // Dismiss when clicking outside the window frame.
+                if !self.frame.contains(mouseLocation) {
+                    self.hide()
+                }
+            }
+        }
+    }
+
+    private func stopEventMonitoring() {
+        if let monitor = self.eventMonitor {
+            NSEvent.removeMonitor(monitor)
+            self.eventMonitor = nil
+        }
     }
 }
