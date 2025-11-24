@@ -39,12 +39,6 @@ actor GraphQLClient {
                 }
                 issues(states: OPEN) { totalCount }
                 pullRequests(states: OPEN) { totalCount }
-                timelineItems(last: 1, itemTypes: [ISSUE_COMMENT, PULL_REQUEST_COMMIT, PULL_REQUEST_REVIEW]) {
-                  nodes {
-                    ... on IssueComment { bodyText updatedAt url author { login } }
-                    ... on PullRequestReview { bodyText updatedAt url author { login } }
-                  }
-                }
               }
             }
             """,
@@ -69,23 +63,11 @@ actor GraphQLClient {
             Release(name: $0.name ?? $0.tagName, tag: $0.tagName, publishedAt: $0.publishedAt, url: $0.url)
         }
 
-        let activity: ActivityEvent? = repo.timelineItems.nodes?.first.flatMap { node in
-            if let text = node.bodyText, let date = node.updatedAt, let url = node.url {
-                let actor = node.author?.login ?? "someone"
-                return ActivityEvent(
-                    title: text.prefix(80) + (text.count > 80 ? "…" : ""),
-                    actor: actor,
-                    date: date,
-                    url: url)
-            }
-            return nil
-        }
-
         return GraphRepoSnapshot(
             release: release,
             openIssues: repo.issues.totalCount,
             openPulls: repo.pullRequests.totalCount,
-            activity: activity)
+            activity: nil)
     }
 }
 
@@ -116,7 +98,6 @@ private struct RepositoryNode: Decodable {
     let releases: ReleaseConnection
     let issues: CountContainer
     let pullRequests: CountContainer
-    let timelineItems: TimelineConnection
 }
 
 private struct ReleaseConnection: Decodable {
@@ -132,19 +113,4 @@ private struct ReleaseNode: Decodable {
 
 private struct CountContainer: Decodable {
     let totalCount: Int
-}
-
-private struct TimelineConnection: Decodable {
-    let nodes: [TimelineNode]?
-}
-
-private struct TimelineNode: Decodable {
-    let bodyText: String?
-    let updatedAt: Date?
-    let url: URL?
-    let author: AuthorNode?
-}
-
-private struct AuthorNode: Decodable {
-    let login: String
 }

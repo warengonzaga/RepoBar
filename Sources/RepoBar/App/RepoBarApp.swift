@@ -11,7 +11,6 @@ struct RepoBarApp: App {
     init() {
         // Share a single AppState between the App delegate (status item) and SwiftUI scenes.
         self.appDelegate.inject(appState: self.appState)
-        Task { await DiagnosticsLogger.shared.setEnabled(self.appState.session.settings.diagnosticsEnabled) }
     }
 
     var body: some Scene {
