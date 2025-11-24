@@ -8,7 +8,7 @@ struct ContributionHeaderView: View {
             AsyncImage(url: URL(string: "https://ghchart.rshah.org/\(username)")) { phase in
                 switch phase {
                 case .empty:
-                    ProgressView()
+                    self.placeholderOverlay
                 case let .success(image):
                     image
                         .resizable()
@@ -16,11 +16,12 @@ struct ContributionHeaderView: View {
                         .frame(maxWidth: 500)
                         .accessibilityLabel("Contribution graph for \(username)")
                 case .failure:
-                    self.placeholder
+                    self.placeholderOverlay
                 @unknown default:
-                    self.placeholder
+                    self.placeholderOverlay
                 }
             }
+            .frame(height: 110)
             .accessibilityElement(children: .contain)
         }
     }
@@ -30,5 +31,9 @@ struct ContributionHeaderView: View {
             .fill(Color.gray.opacity(0.2))
             .frame(height: 80)
             .accessibilityLabel("Contribution graph unavailable")
+    }
+
+    private var placeholderOverlay: some View {
+        placeholder.overlay { ProgressView() }
     }
 }

@@ -4,54 +4,57 @@ struct MenuContentView: View {
     @EnvironmentObject var session: Session
     @EnvironmentObject var appState: AppState
     @State private var showingAddRepo = false
-    @State private var contributionWidth: CGFloat = 480
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 16) {
-            if self.session.settings.showContributionHeader {
-                ContributionHeaderView(username: self.currentUsername())
-                    .frame(maxWidth: .infinity)
-            }
-
-            if self.isLoggedOut {
-                LoggedOutView(onLogin: self.openLogin)
-            } else {
-                if let reset = session.rateLimitReset {
-                    RateLimitBanner(reset: reset)
-                }
-                if let error = session.lastError {
-                    ErrorBanner(message: error)
+        ScrollView {
+            VStack(alignment: .leading, spacing: 16) {
+                if self.session.settings.showContributionHeader {
+                    ContributionHeaderView(username: self.currentUsername())
+                        .frame(maxWidth: .infinity)
                 }
 
-                HStack {
-                    Label("Repositories", systemImage: "shippingbox.fill")
-                        .font(.headline)
-                    Spacer()
-                    Button {
-                        self.showingAddRepo = true
-                    } label: {
-                        Label("Add", systemImage: "plus")
-                            .labelStyle(.iconOnly)
-                    }
-                    .buttonStyle(.bordered)
-                }
-                if !self.session.settings.pinnedRepositories.isEmpty {
-                    Text("Drag cards or use the ... menu to reorder pinned repos.")
-                        .font(.caption2)
-                        .foregroundStyle(.secondary)
-                }
-
-                if self.viewModels().isEmpty {
-                    EmptyStateView(
-                        isLoggedIn: true,
-                        onLogin: self.openLogin)
+                if self.isLoggedOut {
+                    LoggedOutView(onLogin: self.openLogin)
                 } else {
-                    RepoGridView(repositories: self.viewModels(), unpin: self.unpin, move: self.movePin)
+                    if let reset = session.rateLimitReset {
+                        RateLimitBanner(reset: reset)
+                    }
+                    if let error = session.lastError {
+                        ErrorBanner(message: error)
+                    }
+
+                    HStack {
+                        Label("Repositories", systemImage: "shippingbox.fill")
+                            .font(.headline)
+                        Spacer()
+                        Button {
+                            self.showingAddRepo = true
+                        } label: {
+                            Label("Add", systemImage: "plus")
+                                .labelStyle(.iconOnly)
+                        }
+                        .buttonStyle(.bordered)
+                    }
+                    if !self.session.settings.pinnedRepositories.isEmpty {
+                        Text("Drag cards or use the ... menu to reorder pinned repos.")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+
+                    if self.viewModels().isEmpty {
+                        EmptyStateView(
+                            isLoggedIn: true,
+                            onLogin: self.openLogin)
+                    } else {
+                        RepoGridView(repositories: self.viewModels(), unpin: self.unpin, move: self.movePin)
+                    }
                 }
             }
+            .padding(.horizontal, 18)
+            .padding(.vertical, 14)
+            .frame(maxWidth: .infinity, alignment: .leading)
         }
-        .padding(.horizontal, 18)
-        .padding(.vertical, 14)
+        .frame(minWidth: 420, maxWidth: 560)
         .sheet(isPresented: self.$showingAddRepo) {
             AddRepoView(isPresented: self.$showingAddRepo) { repo in
                 Task { await self.appState.addPinned(repo.fullName) }
@@ -59,7 +62,6 @@ struct MenuContentView: View {
             .environmentObject(self.appState)
             .environmentObject(self.session)
         }
-        .frame(minWidth: 420, maxWidth: 560)
     }
 
     private func currentUsername() -> String? {
@@ -202,36 +204,27 @@ struct RepoGridView: View {
     let move: (IndexSet, Int) -> Void
     @EnvironmentObject var session: Session
 
-    private var columns: [GridItem] {
-        switch self.session.settings.cardDensity {
-        case .comfortable:
-            [GridItem(.adaptive(minimum: 260, maximum: 320), spacing: 12)]
-        case .compact:
-            [GridItem(.adaptive(minimum: 220, maximum: 280), spacing: 10)]
-        }
-    }
+    private var columns: [GridItem] { [GridItem(.flexible(minimum: 340), spacing: 12)] }
 
     var body: some View {
         let ordered = self.sorted(self.repositories)
-        ScrollView {
-            LazyVGrid(columns: self.columns, spacing: 12) {
-                ForEach(ordered) { repo in
-                    RepoCardView(
-                        repo: repo,
-                        unpin: { self.unpin(repo) },
-                        moveUp: { self.moveStep(repo: repo, in: ordered, direction: -1) },
-                        moveDown: { self.moveStep(repo: repo, in: ordered, direction: 1) })
-                        .onDrag {
-                            let provider = NSItemProvider(object: NSString(string: repo.id))
-                            provider.suggestedName = repo.id
-                            return provider
-                        }
-                        .onDrop(of: [.text], delegate: DragReorderDelegate(item: repo, items: ordered, move: self.move))
-                }
+        LazyVGrid(columns: self.columns, spacing: 12) {
+            ForEach(ordered) { repo in
+                RepoCardView(
+                    repo: repo,
+                    unpin: { self.unpin(repo) },
+                    moveUp: { self.moveStep(repo: repo, in: ordered, direction: -1) },
+                    moveDown: { self.moveStep(repo: repo, in: ordered, direction: 1) })
+                    .onDrag {
+                        let provider = NSItemProvider(object: NSString(string: repo.id))
+                        provider.suggestedName = repo.id
+                        return provider
+                    }
+                    .onDrop(of: [.text], delegate: DragReorderDelegate(item: repo, items: ordered, move: self.move))
             }
-            .padding(.vertical, 4)
         }
-        .frame(minHeight: 260)
+        .padding(.vertical, 4)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
     }
 
     private func sorted(_ repos: [RepositoryViewModel]) -> [RepositoryViewModel] {

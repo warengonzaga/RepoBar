@@ -10,6 +10,7 @@ extension Error {
             case .notConnectedToInternet: return "No internet connection."
             case .timedOut: return "Request timed out."
             case .cannotLoadFromNetwork: return "Rate limited; retry soon."
+            case .cannotParseResponse: return "GitHub returned an unexpected response."
             case .serverCertificateUntrusted, .serverCertificateHasBadDate, .serverCertificateHasUnknownRoot,
                  .serverCertificateNotYetValid:
                 return "Enterprise host certificate is not trusted."

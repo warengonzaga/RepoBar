@@ -13,7 +13,7 @@ struct CustomMenuContainer<Content: View>: View {
             self.content()
                 .padding(16)
         }
-        .frame(minWidth: 420, maxWidth: 520, minHeight: 300)
+        .frame(minWidth: 380, maxWidth: 460, minHeight: 300)
         .shadow(color: .black.opacity(0.08), radius: 14, y: 8)
     }
 }
