@@ -18,7 +18,8 @@ actor GitHubClient {
     private var tokenProvider: (@Sendable () async throws -> OAuthTokens?)?
     private let graphQL = GraphQLClient()
     private let diag = DiagnosticsLogger.shared
-    private var installationTokenProvider: (@Sendable () async throws -> String)?
+    private var installationTokenProvider: (@Sendable (_ installationID: String) async throws -> String)?
+    private var installationsProvider: (@Sendable () async throws -> [Installation])?
 
     // MARK: - Config
 
@@ -49,8 +50,12 @@ actor GitHubClient {
         }
     }
 
-    func setInstallationTokenProvider(_ provider: @Sendable @escaping () async throws -> String) {
+    func setInstallationTokenProvider(_ provider: @Sendable @escaping (_ installationID: String) async throws -> String) {
         self.installationTokenProvider = provider
+    }
+
+    func setInstallationsProvider(_ provider: @Sendable @escaping () async throws -> [Installation]) {
+        self.installationsProvider = provider
     }
 
     func rateLimitReset() -> Date? { self.lastRateLimitReset }
@@ -59,16 +64,30 @@ actor GitHubClient {
     // MARK: - High level fetchers
 
     func defaultRepositories(limit: Int, for username: String) async throws -> [Repository] {
+        // Prefer installation repositories across all installations if available.
+        if let installations = try await installationsProvider?(), !installations.isEmpty {
+            var aggregated: [RepoItem] = []
+            for install in installations {
+                if aggregated.count >= limit { break }
+                let repos = try await self.installationRepositories(installationID: install.id)
+                aggregated.append(contentsOf: repos)
+            }
+            let trimmed = Array(aggregated.prefix(limit))
+            return try await self.expandRepoItems(trimmed)
+        }
+
         let repos = try await userReposSorted(limit: max(limit, 10))
-        return try await withThrowingTaskGroup(of: Repository.self) { group in
-            for repo in repos.prefix(limit) {
+        return try await self.expandRepoItems(Array(repos.prefix(limit)))
+    }
+
+    private func expandRepoItems(_ items: [RepoItem]) async throws -> [Repository] {
+        try await withThrowingTaskGroup(of: Repository.self) { group in
+            for repo in items {
                 group.addTask { try await self.fullRepository(owner: repo.owner.login, name: repo.name) }
             }
-            var items: [Repository] = []
-            for try await repo in group {
-                items.append(repo)
-            }
-            return items
+            var out: [Repository] = []
+            for try await repo in group { out.append(repo) }
+            return out
         }
     }
 
@@ -246,6 +265,15 @@ actor GitHubClient {
         ]
         let (data, _) = try await authorizedGet(url: components.url!, token: token)
         return try self.jsonDecoder.decode([RepoItem].self, from: data)
+    }
+
+    private func installationRepositories(installationID: Int) async throws -> [RepoItem] {
+        guard let tokenProvider = installationTokenProvider else { return [] }
+        let token = try await tokenProvider(String(installationID))
+        let url = self.apiHost.appending(path: "/user/installations/\(installationID)/repositories")
+        let (data, _) = try await authorizedGet(url: url, token: token)
+        let decoded = try self.jsonDecoder.decode(InstallationReposResponse.self, from: data)
+        return decoded.repositories
     }
 
     private func repoDetails(owner: String, name: String) async throws -> RepoItem {
@@ -448,7 +476,9 @@ actor GitHubClient {
         // Prefer installation token when available.
         if let installProvider = installationTokenProvider {
             if let cached = try tokenStore.load()?.accessToken { return cached }
-            let installToken = try await installProvider()
+            let installs = try await installationsProvider?() ?? []
+            guard let installID = installs.first?.id else { throw URLError(.userAuthenticationRequired) }
+            let installToken = try await installProvider(String(installID))
             return installToken
         }
         if let token = try tokenStore.load()?.accessToken { return token }
@@ -469,6 +499,16 @@ actor GitHubClient {
             accumulator.absorb(error)
             return nil
         }
+    }
+}
+
+private struct InstallationReposResponse: Decodable {
+    let totalCount: Int
+    let repositories: [RepoItem]
+
+    enum CodingKeys: String, CodingKey {
+        case totalCount = "total_count"
+        case repositories
     }
 }
 

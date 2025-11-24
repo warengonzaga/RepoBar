@@ -194,11 +194,14 @@ final class AppState: ObservableObject {
     }
 
     private func configureInstallationProvider() async {
-        await self.github.setInstallationTokenProvider { @Sendable [weak self] in
+        await self.github.setInstallationsProvider { @Sendable [weak self] in
             guard let self else { throw URLError(.userAuthenticationRequired) }
-            let installs = try await self.auth.installations()
-            guard let first = installs.first else { throw URLError(.userAuthenticationRequired) }
-            return try await self.auth.installationToken(for: String(first.id))
+            return try await self.auth.installations()
+        }
+
+        await self.github.setInstallationTokenProvider { @Sendable [weak self] installID in
+            guard let self else { throw URLError(.userAuthenticationRequired) }
+            return try await self.auth.installationToken(for: installID)
         }
     }
 

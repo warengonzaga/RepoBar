@@ -163,16 +163,6 @@ private struct InstallationTokenResponse: Decodable {
     }
 }
 
-struct Installation: Decodable {
-    let id: Int
-    let account: Account
-
-    struct Account: Decodable {
-        let login: String
-        let url: URL?
-    }
-}
-
     private func normalize(host: URL) throws -> URL {
         guard var components = URLComponents(url: host, resolvingAgainstBaseURL: false) else {
             throw GitHubAPIError.invalidHost
