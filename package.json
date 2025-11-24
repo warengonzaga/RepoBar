@@ -12,5 +12,8 @@
     "restart": "pnpm stop && pnpm start",
     "stop": "pkill -f \".build/debug/RepoBar\" || true",
     "codegen": "./Scripts/apollo_codegen.sh"
+  },
+  "dependencies": {
+    "graphql": "^16.12.0"
   }
 }

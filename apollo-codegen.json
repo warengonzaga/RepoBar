@@ -1,49 +1,56 @@
 {
+  "schemaNamespace": "RepoBarGraphQL",
   "schemaDownloadConfiguration": {
     "downloadMethod": {
       "introspection": {
         "endpointURL": "https://api.github.com/graphql",
-        "httpMethod": "POST",
-        "includeDeprecatedInputValues": true,
-        "headers": {
-          "User-Agent": "RepoBar-Codegen"
-        }
+        "httpMethod": {
+          "POST": {}
+        },
+        "includeDeprecatedInputValues": false,
+        "outputFormat": "SDL"
       }
+    },
+    "headers": {
+      "Authorization": "Bearer ${GITHUB_TOKEN}",
+      "User-Agent": "RepoBar-Codegen"
     },
     "outputPath": "GraphQL/schema.graphqls"
   },
-  "operationOutput": {
-    "schemaPath": "GraphQL/schema.graphqls",
-    "output": "GraphQL/Operations.graphql"
+  "input": {
+    "schemaSearchPaths": [
+      "GraphQL/schema.graphqls"
+    ],
+    "operationSearchPaths": [
+      "GraphQL/**/*.graphql"
+    ]
   },
-  "apolloCodegenConfiguration": {
-    "schemaNamespace": "RepoBarGraphQL",
-    "input": {
-      "schemaPath": "GraphQL/schema.graphqls",
-      "operationSearchPaths": ["GraphQL/**/*.graphql"]
-    },
-    "output": {
-      "testMocks": {
-        "none": {}
-      },
-      "schemaTypes": {
-        "path": "Sources/RepoBar/API/Generated/SchemaTypes.swift",
-        "moduleType": {
-          "embeddedInTarget": {
-            "targetName": "RepoBar"
-          }
-        }
-      },
-      "operations": {
-        "inSchemaModule": {
-          "moduleType": {
-            "embeddedInTarget": {
-              "targetName": "RepoBar"
-            }
-          },
-          "operationIDsURL": "GraphQL/operation_ids.json"
+  "output": {
+    "schemaTypes": {
+      "path": "Sources/RepoBar/API/Generated/SchemaTypes.swift",
+      "moduleType": {
+        "embeddedInTarget": {
+          "name": "RepoBar",
+          "accessModifier": "internal"
         }
       }
+    },
+    "operations": {
+      "inSchemaModule": {
+        "moduleType": {
+          "embeddedInTarget": {
+            "name": "RepoBar",
+            "accessModifier": "internal"
+          }
+        },
+        "operationIDsPath": "GraphQL/operation_ids.json"
+      }
+    },
+    "testMocks": {
+      "none": {}
     }
+  },
+  "experimentalFeatures": {
+    "clientControlledNullability": true
   }
 }

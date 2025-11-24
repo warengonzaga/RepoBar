@@ -2,11 +2,16 @@
 set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-if ! command -v apollo-ios >/dev/null; then
-  echo "apollo-ios (Apollo codegen CLI) not found. Install with: brew install apollo-ios" >&2
-  exit 1
+APOLLO_BIN="${APOLLO_BIN:-$ROOT/apollo-ios-cli}"
+if ! command -v "$APOLLO_BIN" >/dev/null 2>&1; then
+  if [ -x "$APOLLO_BIN" ]; then
+    :
+  else
+    echo "apollo-ios-cli not found. Build with: swift package --allow-writing-to-package-directory apollo-cli-install" >&2
+    exit 1
+  fi
 fi
 
 cd "$ROOT"
-apollo-ios download-schema --path GraphQL/schema.graphqls --endpoint https://api.github.com/graphql
-apollo-ios generate --config apollo-codegen.json
+"$APOLLO_BIN" fetch-schema --path apollo-codegen.json --header "Authorization: Bearer ${GITHUB_TOKEN:?GITHUB_TOKEN required}" --header "User-Agent: RepoBar-Codegen" ${GITHUB_GRAPHQL:+--endpoint-url "$GITHUB_GRAPHQL"}
+"$APOLLO_BIN" generate --path apollo-codegen.json

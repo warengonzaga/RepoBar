@@ -11,11 +11,5 @@ query RepoSnapshot($owner: String!, $name: String!) {
     }
     issues(states: OPEN) { totalCount }
     pullRequests(states: OPEN) { totalCount }
-    timelineItems(last: 1, itemTypes: [ISSUE_COMMENT, PULL_REQUEST_REVIEW]) {
-      nodes {
-        ... on IssueComment { bodyText updatedAt url author { login } }
-        ... on PullRequestReview { bodyText updatedAt url author { login } }
-      }
-    }
   }
 }
