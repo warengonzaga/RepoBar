@@ -13,40 +13,41 @@ struct MenuContentView: View {
                     .frame(maxWidth: .infinity)
             }
 
-            if let reset = session.rateLimitReset {
-                RateLimitBanner(reset: reset)
-            }
-            if let error = session.lastError, session.account != .loggedOut {
-                ErrorBanner(message: error)
-            }
-
-            HStack {
-                Label("Repositories", systemImage: "shippingbox.fill")
-                    .font(.headline)
-                Spacer()
-                Button {
-                    self.showingAddRepo = true
-                } label: {
-                    Label("Add", systemImage: "plus")
-                        .labelStyle(.iconOnly)
-                }
-                .buttonStyle(.bordered)
-            }
-            if !self.session.settings.pinnedRepositories.isEmpty {
-                Text("Drag cards or use the ... menu to reorder pinned repos.")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-            }
-
-            if self.viewModels().isEmpty {
-                EmptyStateView(
-                    isLoggedIn: {
-                        if case .loggedIn = self.session.account { return true }
-                        return false
-                    }(),
-                    onLogin: self.openLogin)
+            if self.isLoggedOut {
+                LoggedOutView(onLogin: self.openLogin)
             } else {
-                RepoGridView(repositories: self.viewModels(), unpin: self.unpin, move: self.movePin)
+                if let reset = session.rateLimitReset {
+                    RateLimitBanner(reset: reset)
+                }
+                if let error = session.lastError {
+                    ErrorBanner(message: error)
+                }
+
+                HStack {
+                    Label("Repositories", systemImage: "shippingbox.fill")
+                        .font(.headline)
+                    Spacer()
+                    Button {
+                        self.showingAddRepo = true
+                    } label: {
+                        Label("Add", systemImage: "plus")
+                            .labelStyle(.iconOnly)
+                    }
+                    .buttonStyle(.bordered)
+                }
+                if !self.session.settings.pinnedRepositories.isEmpty {
+                    Text("Drag cards or use the ... menu to reorder pinned repos.")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                }
+
+                if self.viewModels().isEmpty {
+                    EmptyStateView(
+                        isLoggedIn: true,
+                        onLogin: self.openLogin)
+                } else {
+                    RepoGridView(repositories: self.viewModels(), unpin: self.unpin, move: self.movePin)
+                }
             }
         }
         .sheet(isPresented: self.$showingAddRepo) {
@@ -68,6 +69,11 @@ struct MenuContentView: View {
         self.session.repositories.prefix(self.session.settings.repoDisplayLimit).map { RepositoryViewModel(repo: $0) }
     }
 
+    private var isLoggedOut: Bool {
+        if case .loggedOut = self.session.account { return true }
+        return false
+    }
+
     private func unpin(_ repo: RepositoryViewModel) {
         Task { await self.appState.removePinned(repo.title) }
     }
@@ -82,6 +88,27 @@ struct MenuContentView: View {
 
     private func openLogin() {
         NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
+    }
+}
+
+private struct LoggedOutView: View {
+    let onLogin: () -> Void
+
+    var body: some View {
+        VStack(spacing: 16) {
+            Image(systemName: "person.crop.circle.badge.exclam")
+                .font(.system(size: 44, weight: .semibold))
+                .foregroundStyle(.secondary)
+                .padding(.top, 8)
+            Text("Sign in to see your repositories")
+                .font(.headline)
+            Text("Connect your GitHub account to load pins and activity.")
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            Button("Sign in to GitHub") { self.onLogin() }
+                .buttonStyle(.borderedProminent)
+        }
+        .frame(maxWidth: .infinity, minHeight: 280)
     }
 }
 
