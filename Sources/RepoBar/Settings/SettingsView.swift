@@ -165,7 +165,7 @@ struct AccountSettingsView: View {
                     clientID: self.clientID,
                     clientSecret: self.clientSecret,
                     host: self.session.settings.enterpriseHost ?? self.session.settings.githubHost,
-                    loopbackPort: self.port)
+                    loopbackPort: self.session.settings.loopbackPort)
                 if let user = try? await appState.github.currentUser() {
                     self.session.account = .loggedIn(user)
                     self.session.lastError = nil
