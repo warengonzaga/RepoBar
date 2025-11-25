@@ -5,8 +5,9 @@
 
 2) Package (release/debug)  
    - `Scripts/package_app.sh [debug|release]`  
-     - Copies `Resources/Info.plist` into the app bundle.  
-     - Codesigns using `CODESIGN_IDENTITY`/`CODE_SIGN_IDENTITY` if set.
+     - Generates Info.plist with versions from `version.env`.  
+     - Codesigns using `CODESIGN_IDENTITY`/`CODE_SIGN_IDENTITY` if set.  
+     - For release, zips the dSYM to `RepoBar-<ver>.dSYM.zip`.
 
 3) Notarize (optional but recommended for distribution)  
    - Export a keychain profile for notarytool (e.g., “Xcode Notary”).  
@@ -20,3 +21,5 @@
 5) Final sanity
    - Launch the notarized app once, verify menubar icon, Preferences window, and update check.
    - Keep Apollo concurrency warning acknowledged; no other warnings should remain.
+6) Post-publish asset check  
+   - If releasing on GitHub, run `Scripts/check-release-assets.sh <tag>` to ensure both the app zip and dSYM zip are attached.
