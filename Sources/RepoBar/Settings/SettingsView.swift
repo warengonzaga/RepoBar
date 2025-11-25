@@ -17,28 +17,29 @@ struct SettingsView: View {
             AccountSettingsView()
                 .tabItem { Label("Accounts", systemImage: "person.crop.circle") }
                 .tag(SettingsTab.accounts)
-#if DEBUG
-            if self.session.settings.debugPaneEnabled {
-                DebugSettingsView()
-                    .tabItem { Label("Debug", systemImage: "ant.fill") }
-                    .tag(SettingsTab.debug)
-            }
-#endif
+            #if DEBUG
+                if self.session.settings.debugPaneEnabled {
+                    DebugSettingsView()
+                        .tabItem { Label("Debug", systemImage: "ant.fill") }
+                        .tag(SettingsTab.debug)
+                }
+            #endif
             AboutSettingsView()
                 .tabItem { Label("About", systemImage: "info.circle") }
                 .tag(SettingsTab.about)
         }
         .frame(width: 540, height: 420)
         .onChange(of: self.session.settings.debugPaneEnabled) { _, enabled in
-#if DEBUG
-            if !enabled && self.selectedTab == .debug {
-                self.selectedTab = .general
-            }
-#endif
+            #if DEBUG
+                if !enabled, self.selectedTab == .debug {
+                    self.selectedTab = .general
+                }
+            #endif
         }
     }
 }
 
+@MainActor
 struct AboutSettingsView: View {
     @State private var iconHover = false
     @AppStorage("autoUpdateEnabled") private var autoUpdateEnabled: Bool = true
@@ -101,10 +102,12 @@ struct AboutSettingsView: View {
                 Text("Version \(self.versionString)")
                     .foregroundStyle(.secondary)
                 if let buildTimestamp {
-                    var suffix = ""
-                    if let git = self.gitCommit, !git.isEmpty, git != "unknown" {
-                        suffix = " (\(git))"
-                    }
+                    let suffix: String = {
+                        if let git = self.gitCommit, !git.isEmpty, git != "unknown" {
+                            return " (\(git))"
+                        }
+                        return ""
+                    }()
                     Text("Built \(buildTimestamp)\(suffix)")
                         .font(.footnote)
                         .foregroundStyle(.secondary)
@@ -165,6 +168,7 @@ struct AboutSettingsView: View {
     }
 }
 
+@MainActor
 private struct AboutLinkRow: View {
     let icon: String
     let title: String
@@ -195,9 +199,9 @@ enum SettingsTab: Hashable {
     case repositories
     case accounts
     case about
-#if DEBUG
-    case debug
-#endif
+    #if DEBUG
+        case debug
+    #endif
 }
 
 struct GeneralSettingsView: View {
@@ -228,13 +232,13 @@ struct GeneralSettingsView: View {
                     }
                 }
             }
-#if DEBUG
-            Toggle("Enable debug tools", isOn: self.$session.settings.debugPaneEnabled)
-                .onChange(of: self.session.settings.debugPaneEnabled) { _, _ in
-                    self.appState.persistSettings()
-                }
-                .help("Show the Debug tab for diagnostics and developer-only controls.")
-#endif
+            #if DEBUG
+                Toggle("Enable debug tools", isOn: self.$session.settings.debugPaneEnabled)
+                    .onChange(of: self.session.settings.debugPaneEnabled) { _, _ in
+                        self.appState.persistSettings()
+                    }
+                    .help("Show the Debug tab for diagnostics and developer-only controls.")
+            #endif
             Toggle("Launch at login", isOn: self.$session.settings.launchAtLogin)
                 .onChange(of: self.session.settings.launchAtLogin) { _, value in
                     LaunchAtLoginHelper.set(enabled: value)
@@ -279,24 +283,6 @@ struct AppearanceSettingsView: View {
                 .foregroundStyle(.secondary)
                 .padding(.top, 4)
         }
-        .padding()
-    }
-}
-
-struct AboutSettingsView: View {
-    var body: some View {
-        VStack(alignment: .leading, spacing: 12) {
-            if let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String,
-               let build = Bundle.main.object(forInfoDictionaryKey: "CFBundleVersion") as? String
-            {
-                Text("RepoBar \(version) (\(build))")
-                    .font(.headline)
-            }
-            Text("A lightweight menubar dashboard for GitHub activity.")
-                .foregroundStyle(.secondary)
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
     }
 }
@@ -373,7 +359,8 @@ struct AccountSettingsView: View {
                     clientID: self.clientID,
                     clientSecret: self.clientSecret,
                     host: self.session.settings.enterpriseHost ?? self.session.settings.githubHost,
-                    loopbackPort: self.session.settings.loopbackPort)
+                    loopbackPort: self.session.settings.loopbackPort
+                )
                 if let user = try? await appState.github.currentUser() {
                     self.session.account = .loggedIn(user)
                     self.session.lastError = nil
@@ -395,7 +382,6 @@ struct AccountSettingsView: View {
         components.fragment = nil
         return components.url
     }
-
 }
 
 struct DebugSettingsView: View {
