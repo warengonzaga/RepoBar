@@ -19,8 +19,10 @@ struct MenuContentView: View {
                 } else {
                     if let reset = session.rateLimitReset {
                         RateLimitBanner(reset: reset)
+                            .padding(.horizontal, 14)
                     } else if let error = session.lastError {
                         ErrorBanner(message: error)
+                            .padding(.horizontal, 14)
                     }
 
                     HStack(spacing: 10) {
