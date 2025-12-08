@@ -507,6 +507,15 @@ actor GitHubClient {
         }
 
         if status == 403 || status == 429 {
+            let remainingHeader = response.value(forHTTPHeaderField: "X-RateLimit-Remaining")
+            let remaining = Int(remainingHeader ?? "")
+
+            // If we still have quota, this 403 is likely permissions/abuse detection; surface it as a normal error.
+            if let remaining, remaining > 0 {
+                await self.diag.message("403 with remaining=\(remaining) on \(url.lastPathComponent); treating as bad status")
+                throw GitHubAPIError.badStatus(code: status, message: HTTPURLResponse.localizedString(forStatusCode: status))
+            }
+
             let resetDate = self.rateLimitDate(from: response) ?? Date().addingTimeInterval(60)
             self.lastRateLimitReset = resetDate
             await self.etagCache.setRateLimitReset(date: resetDate)
