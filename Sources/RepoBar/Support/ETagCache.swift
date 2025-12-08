@@ -18,13 +18,18 @@ actor ETagCache {
         self.rateLimitedUntil = date
     }
 
-    func rateLimitUntil() -> Date? {
-        self.rateLimitedUntil
+    func rateLimitUntil(now: Date = Date()) -> Date? {
+        guard let until = self.rateLimitedUntil else { return nil }
+        if until <= now {
+            self.rateLimitedUntil = nil
+            return nil
+        }
+        return until
     }
 
     func isRateLimited(now: Date = Date()) -> Bool {
-        if let until = rateLimitedUntil, until > now { return true }
-        return false
+        guard let until = self.rateLimitUntil(now: now) else { return false }
+        return until > now
     }
 
     func clear() {
