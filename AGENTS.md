@@ -1,7 +1,5 @@
 # Repository Guidelines
 
-YOU MUST READ ~/Projects/agent-scripts/AGENTS.MD BEFORE ANYTHING (skip if file missing).
-
 ## Project Structure & Module Organization
 - `Sources/RepoBar/` holds app code: `App` (entry), `StatusBar` (menus/windows), `Auth` (PKCE + TokenStore), `API` (GitHub GraphQL/REST clients), `Models`, `Views`, `Settings`, `Support`; generated GraphQL types, if produced, live under `API/Generated` (do not hand edit).
 - `Tests/RepoBarTests/` contains Swift Testing suites; keep new coverage close to the code under test.
