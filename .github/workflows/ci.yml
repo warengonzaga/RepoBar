@@ -43,5 +43,8 @@ jobs:
       - name: Resolve Swift packages
         run: swift package resolve
 
+      - name: Install SwiftLint/SwiftFormat
+        run: brew install swiftlint swiftformat
+
       - name: Run checks
         run: pnpm check
