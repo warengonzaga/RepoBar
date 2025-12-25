@@ -12,6 +12,7 @@ struct RepoOutput: Codable {
     let fullName: String
     let owner: String
     let name: String
+    let repoUrl: URL
     let openIssues: Int
     let openPulls: Int
     let stars: Int
@@ -81,7 +82,12 @@ private func compare(lhs: RepoRow, rhs: RepoRow, sortKey: SortKey) -> Bool? {
     }
 }
 
-func renderTable(_ rows: [RepoRow], useColor: Bool) {
+func renderTable(
+    _ rows: [RepoRow],
+    useColor: Bool,
+    includeURL: Bool,
+    baseHost: URL
+) {
     let activityHeader = "ACTIVITY"
     let issuesHeader = "ISSUES"
     let pullsHeader = "PR"
@@ -110,13 +116,22 @@ func renderTable(_ rows: [RepoRow], useColor: Bool) {
         let stars = padLeft(String(row.repo.stars), to: starsWidth)
         let activity = padRight(row.activityLabel, to: activityWidth)
         let repoName = row.repo.fullName
-        let line = row.activityLine.singleLine
+        let repoURL = makeRepoURL(baseHost: baseHost, repo: row.repo)
+        let repoLabel = includeURL ? Ansi.link(repoName, url: repoURL, enabled: Ansi.supportsLinks) : repoName
+        let lineText = row.activityLine.singleLine
+        let lineURL = row.repo.latestActivity?.url
+        let line: String
+        if includeURL, let lineURL {
+            line = Ansi.link(lineText, url: lineURL, enabled: Ansi.supportsLinks)
+        } else {
+            line = lineText
+        }
 
         let coloredActivity = useColor ? Ansi.gray.wrap(activity) : activity
         let coloredIssues = useColor ? (row.repo.openIssues > 0 ? Ansi.red.wrap(issues) : Ansi.gray.wrap(issues)) : issues
         let coloredPulls = useColor ? (row.repo.openPulls > 0 ? Ansi.magenta.wrap(pulls) : Ansi.gray.wrap(pulls)) : pulls
         let coloredStars = useColor ? (row.repo.stars > 0 ? Ansi.yellow.wrap(stars) : Ansi.gray.wrap(stars)) : stars
-        let coloredRepo = useColor ? Ansi.cyan.wrap(repoName) : repoName
+        let coloredRepo = useColor ? Ansi.cyan.wrap(repoLabel) : repoLabel
         let coloredLine = useColor && row.repo.error != nil ? Ansi.red.wrap(line) : line
 
         let output = [
@@ -136,12 +151,13 @@ func renderTable(_ rows: [RepoRow], useColor: Bool) {
     }
 }
 
-func renderJSON(_ rows: [RepoRow]) throws {
+func renderJSON(_ rows: [RepoRow], baseHost: URL) throws {
     let items = rows.map { row in
         RepoOutput(
             fullName: row.repo.fullName,
             owner: row.repo.owner,
             name: row.repo.name,
+            repoUrl: makeRepoURL(baseHost: baseHost, repo: row.repo),
             openIssues: row.repo.openIssues,
             openPulls: row.repo.openPulls,
             stars: row.repo.stars,
@@ -169,4 +185,8 @@ func padLeft(_ value: String, to width: Int) -> String {
 func padRight(_ value: String, to width: Int) -> String {
     let pad = max(0, width - value.count)
     return value + String(repeating: " ", count: pad)
+}
+
+func makeRepoURL(baseHost: URL, repo: Repository) -> URL {
+    baseHost.appending(path: "/\(repo.owner)/\(repo.name)")
 }

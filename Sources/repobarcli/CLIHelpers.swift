@@ -116,10 +116,15 @@ enum Ansi {
     static let magenta = Code("\u{001B}[35m")
     static let cyan = Code("\u{001B}[36m")
     static let gray = Code("\u{001B}[90m")
+    static let oscTerminator = "\u{001B}\\"
 
     static var supportsColor: Bool {
         guard isatty(fileno(stdout)) != 0 else { return false }
         return ProcessInfo.processInfo.environment["NO_COLOR"] == nil
+    }
+
+    static var supportsLinks: Bool {
+        isatty(fileno(stdout)) != 0
     }
 
     struct Code {
@@ -132,6 +137,13 @@ enum Ansi {
         func wrap(_ text: String) -> String {
             "\(self.value)\(text)\(Ansi.reset)"
         }
+    }
+
+    static func link(_ label: String, url: URL, enabled: Bool) -> String {
+        guard enabled else { return "\(label) \(url.absoluteString)" }
+        let start = "\u{001B}]8;;\(url.absoluteString)\(Ansi.oscTerminator)"
+        let end = "\u{001B}]8;;\(Ansi.oscTerminator)"
+        return "\(start)\(label)\(end)"
     }
 }
 
@@ -216,7 +228,7 @@ func printHelp(_ target: HelpTarget) {
         repobarcli - list repositories by activity, issues, PRs, stars
 
         Usage:
-          repobarcli [repos] [--limit N] [--age DAYS] [--json] [--sort KEY]
+          repobarcli [repos] [--limit N] [--age DAYS] [--url] [--json] [--sort KEY]
           repobarcli login [--host URL] [--client-id ID] [--client-secret SECRET] [--loopback-port PORT]
           repobarcli logout
           repobarcli status [--json]
@@ -224,6 +236,7 @@ func printHelp(_ target: HelpTarget) {
         Options:
           --limit N    Max repositories to fetch (default: all accessible)
           --age DAYS   Only show repos with activity in the last N days (default: 365)
+          --url        Include clickable URLs in output
           --json       Output JSON instead of formatted table
           --sort KEY   Sort by activity, issues, prs, stars, repo, or event
           --no-color   Disable color output
@@ -234,11 +247,12 @@ func printHelp(_ target: HelpTarget) {
         repobarcli repos - list repositories
 
         Usage:
-          repobarcli repos [--limit N] [--age DAYS] [--json] [--sort KEY]
+          repobarcli repos [--limit N] [--age DAYS] [--url] [--json] [--sort KEY]
 
         Options:
           --limit N    Max repositories to fetch (default: all accessible)
           --age DAYS   Only show repos with activity in the last N days (default: 365)
+          --url        Include clickable URLs in output
           --json       Output JSON instead of formatted table
           --sort KEY   Sort by activity, issues, prs, stars, repo, or event
           --no-color   Disable color output

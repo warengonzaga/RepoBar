@@ -7,6 +7,7 @@
 - repobarcli bundled CLI with login/logout/status and repo listing (activity, issues, PRs, stars), JSON output, and limit flag.
 - CLI repo listing now filters to the signed-in user and owned orgs (admin membership).
 - repobarcli now defaults to 365-day activity filtering and supports `--age` to override.
+- repobarcli can emit clickable URLs in table output with `--url`.
 
 ### Changed
 - OAuth/login helpers moved to RepoBarCore so app and CLI share the same keychain flow.

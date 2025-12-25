@@ -31,6 +31,9 @@ struct ReposCommand: CommanderRunnableCommand {
     @Option(name: .customLong("age"), help: "Max age in days for repo activity (default: 365)")
     var age: Int = 365
 
+    @Flag(names: [.customLong("url")], help: "Include clickable URLs in output")
+    var includeURL: Bool = false
+
     @Option(name: .customLong("sort"), help: "Sort by activity, issues, prs, stars, repo, or event")
     var sort: SortKey = .activity
 
@@ -49,6 +52,7 @@ struct ReposCommand: CommanderRunnableCommand {
         self.limit = try values.decodeOption("limit")
         self.age = try values.decodeOption("age") ?? 365
         self.sort = try values.decodeOption("sort") ?? .activity
+        self.includeURL = values.flag("includeURL")
     }
 
     mutating func run() async throws {
@@ -92,10 +96,17 @@ struct ReposCommand: CommanderRunnableCommand {
         }
         let sorted = sortRows(filtered, sortKey: sort)
 
+        let baseHost = settings.enterpriseHost ?? settings.githubHost
+
         if self.output.jsonOutput {
-            try renderJSON(sorted)
+            try renderJSON(sorted, baseHost: baseHost)
         } else {
-            renderTable(sorted, useColor: self.output.useColor)
+            renderTable(
+                sorted,
+                useColor: self.output.useColor,
+                includeURL: self.includeURL,
+                baseHost: baseHost
+            )
         }
     }
 }
