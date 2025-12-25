@@ -7,6 +7,7 @@ let package = Package(
         .macOS(.v15),
     ],
     dependencies: [
+        .package(path: "../Commander"),
         .package(url: "https://github.com/sparkle-project/Sparkle", from: "2.8.1"),
         .package(url: "https://github.com/orchetect/MenuBarExtraAccess", exact: "1.2.2"),
         .package(url: "https://github.com/apple/swift-algorithms", from: "1.2.1"),
@@ -42,6 +43,7 @@ let package = Package(
         .executableTarget(
             name: "repobarcli",
             dependencies: [
+                .product(name: "Commander", package: "Commander"),
                 "RepoBarCore",
             ],
             swiftSettings: [

@@ -9,3 +9,4 @@
 
 ### Changed
 - OAuth/login helpers moved to RepoBarCore so app and CLI share the same keychain flow.
+- repobarcli now uses Commander for command parsing and subcommand routing.

@@ -1,0 +1,265 @@
+import Commander
+import Darwin
+import Foundation
+
+protocol CommanderRunnableCommand: ParsableCommand {
+    static var commandName: String { get }
+    mutating func bind(_ values: ParsedValues) throws
+}
+
+extension ParsableCommand {
+    static func descriptor() -> CommandDescriptor {
+        let description = Self.commandDescription
+        let instance = Self.init()
+        let signature = CommandSignature.describe(instance).flattened()
+        let name = description.commandName ?? String(describing: Self.self).lowercased()
+        let subcommands = description.subcommands.map { $0.descriptor() }
+        let defaultName = description.defaultSubcommand?.commandDescription.commandName
+            ?? description.defaultSubcommand.map { String(describing: $0).lowercased() }
+        return CommandDescriptor(
+            name: name,
+            abstract: description.abstract,
+            discussion: description.discussion,
+            signature: signature,
+            subcommands: subcommands,
+            defaultSubcommandName: defaultName)
+    }
+}
+
+extension ParsedValues {
+    func flag(_ label: String) -> Bool {
+        flags.contains(label)
+    }
+
+    func decodeOption<T: ExpressibleFromArgument>(_ label: String) throws -> T? {
+        guard let raw = options[label]?.last else { return nil }
+        guard let value = T(argument: raw) else {
+            throw ValidationError("Invalid value for --\(label): \(raw)")
+        }
+        return value
+    }
+}
+
+struct OutputOptions: CommanderParsable, Sendable {
+    @Flag(names: [.customLong("json"), .customLong("json-output"), .short("j")],
+          help: "Output JSON instead of the formatted table")
+    var jsonOutput: Bool = false
+
+    @Flag(names: [.customLong("no-color")], help: "Disable color output")
+    var noColor: Bool = false
+
+    init() {}
+
+    mutating func bind(_ values: ParsedValues) {
+        jsonOutput = values.flag("jsonOutput")
+        noColor = values.flag("noColor")
+    }
+
+    var useColor: Bool {
+        jsonOutput == false && noColor == false && Ansi.supportsColor
+    }
+}
+
+enum SortKey: String, ExpressibleFromArgument, Sendable {
+    case activity
+    case issues
+    case pulls
+    case stars
+    case repo
+    case event
+
+    init?(argument: String) {
+        switch argument.lowercased() {
+        case "activity", "act", "date":
+            self = .activity
+        case "issues", "issue", "iss":
+            self = .issues
+        case "prs", "pr", "pulls", "pull":
+            self = .pulls
+        case "stars", "star":
+            self = .stars
+        case "repo", "name":
+            self = .repo
+        case "event", "activity-line", "line":
+            self = .event
+        default:
+            return nil
+        }
+    }
+}
+
+enum CLIError: Error {
+    case notAuthenticated
+    case openFailed
+    case unknownCommand(String)
+
+    var message: String {
+        switch self {
+        case .notAuthenticated:
+            return "No stored login. Run `repobarcli login` first."
+        case .openFailed:
+            return "Failed to open the browser."
+        case let .unknownCommand(command):
+            return "Unknown command: \(command)"
+        }
+    }
+}
+
+enum Ansi {
+    static let reset = "\u{001B}[0m"
+    static let bold = Code("\u{001B}[1m")
+    static let red = Code("\u{001B}[31m")
+    static let yellow = Code("\u{001B}[33m")
+    static let magenta = Code("\u{001B}[35m")
+    static let cyan = Code("\u{001B}[36m")
+    static let gray = Code("\u{001B}[90m")
+
+    static var supportsColor: Bool {
+        guard isatty(fileno(stdout)) != 0 else { return false }
+        return ProcessInfo.processInfo.environment["NO_COLOR"] == nil
+    }
+
+    struct Code {
+        let value: String
+
+        init(_ value: String) {
+            self.value = value
+        }
+
+        func wrap(_ text: String) -> String {
+            "\(self.value)\(text)\(Ansi.reset)"
+        }
+    }
+}
+
+extension String {
+    var singleLine: String {
+        let noNewlines = self.replacingOccurrences(of: "\r\n", with: "\n")
+            .components(separatedBy: .newlines)
+            .joined(separator: " ")
+        return noNewlines.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+    }
+}
+
+func printError(_ message: String) {
+    if Ansi.supportsColor {
+        print(Ansi.red.wrap("Error: \(message)"))
+    } else {
+        print("Error: \(message)")
+    }
+}
+
+func openURL(_ url: URL) throws {
+    let process = Process()
+    process.executableURL = URL(fileURLWithPath: "/usr/bin/open")
+    process.arguments = [url.absoluteString]
+    try process.run()
+    process.waitUntilExit()
+    guard process.terminationStatus == 0 else { throw CLIError.openFailed }
+}
+
+func parseHost(_ raw: String) throws -> URL {
+    guard var components = URLComponents(string: raw) else {
+        throw ValidationError("Invalid host: \(raw)")
+    }
+    if components.scheme == nil { components.scheme = "https" }
+    guard let url = components.url else {
+        throw ValidationError("Invalid host: \(raw)")
+    }
+    return url
+}
+
+enum HelpTarget: String {
+    case root
+    case repos
+    case login
+    case logout
+    case status
+
+    static func from(argv: [String]) -> HelpTarget? {
+        guard !argv.isEmpty else { return .root }
+
+        if argv.count > 1, argv[1] == "help" {
+            let target = argv.dropFirst(2).first
+            return HelpTarget.from(token: target)
+        }
+
+        guard argv.contains("--help") || argv.contains("-h") else { return nil }
+        let target = argv.dropFirst().first(where: { !$0.hasPrefix("-") })
+        return HelpTarget.from(token: target)
+    }
+
+    private static func from(token: String?) -> HelpTarget {
+        guard let token else { return .root }
+        switch token {
+        case ReposCommand.commandName:
+            return .repos
+        case LoginCommand.commandName:
+            return .login
+        case LogoutCommand.commandName:
+            return .logout
+        case StatusCommand.commandName:
+            return .status
+        default:
+            return .root
+        }
+    }
+}
+
+func printHelp(_ target: HelpTarget) {
+    let text: String
+    switch target {
+    case .root:
+        text = """
+        repobarcli - list repositories by activity, issues, PRs, stars
+
+        Usage:
+          repobarcli [repos] [--limit N] [--json] [--sort KEY]
+          repobarcli login [--host URL] [--client-id ID] [--client-secret SECRET] [--loopback-port PORT]
+          repobarcli logout
+          repobarcli status [--json]
+
+        Options:
+          --limit N    Max repositories to fetch (default: all accessible)
+          --json       Output JSON instead of formatted table
+          --sort KEY   Sort by activity, issues, prs, stars, repo, or event
+          --no-color   Disable color output
+          -h, --help   Show help
+        """
+    case .repos:
+        text = """
+        repobarcli repos - list repositories
+
+        Usage:
+          repobarcli repos [--limit N] [--json] [--sort KEY]
+
+        Options:
+          --limit N    Max repositories to fetch (default: all accessible)
+          --json       Output JSON instead of formatted table
+          --sort KEY   Sort by activity, issues, prs, stars, repo, or event
+          --no-color   Disable color output
+        """
+    case .login:
+        text = """
+        repobarcli login - sign in via browser OAuth
+
+        Usage:
+          repobarcli login [--host URL] [--client-id ID] [--client-secret SECRET] [--loopback-port PORT]
+        """
+    case .logout:
+        text = """
+        repobarcli logout - clear stored credentials
+
+        Usage:
+          repobarcli logout
+        """
+    case .status:
+        text = """
+        repobarcli status - show login state
+
+        Usage:
+          repobarcli status [--json]
+        """
+    }
+    print(text)
+}
