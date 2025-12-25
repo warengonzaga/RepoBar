@@ -56,4 +56,11 @@ let package = Package(
                 .enableUpcomingFeature("StrictConcurrency"),
                 .enableExperimentalFeature("SwiftTesting"),
             ]),
+        .testTarget(
+            name: "repobarcliTests",
+            dependencies: ["repobarcli"],
+            swiftSettings: [
+                .enableUpcomingFeature("StrictConcurrency"),
+                .enableExperimentalFeature("SwiftTesting"),
+            ]),
     ])

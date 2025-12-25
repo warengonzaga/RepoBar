@@ -117,15 +117,20 @@ func renderTable(
         let activity = padRight(row.activityLabel, to: activityWidth)
         let repoName = row.repo.fullName
         let repoURL = makeRepoURL(baseHost: baseHost, repo: row.repo)
-        let repoLabel = includeURL ? Ansi.link(repoName, url: repoURL, enabled: Ansi.supportsLinks) : repoName
+        let repoLabel = formatRepoLabel(
+            repoName: repoName,
+            repoURL: repoURL,
+            includeURL: includeURL,
+            linkEnabled: Ansi.supportsLinks
+        )
         let lineText = row.activityLine.singleLine
         let lineURL = row.repo.latestActivity?.url
-        let line: String
-        if includeURL, let lineURL {
-            line = Ansi.link(lineText, url: lineURL, enabled: Ansi.supportsLinks)
-        } else {
-            line = lineText
-        }
+        let line = formatEventLabel(
+            text: lineText,
+            url: lineURL,
+            includeURL: includeURL,
+            linkEnabled: Ansi.supportsLinks
+        )
 
         let coloredActivity = useColor ? Ansi.gray.wrap(activity) : activity
         let coloredIssues = useColor ? (row.repo.openIssues > 0 ? Ansi.red.wrap(issues) : Ansi.gray.wrap(issues)) : issues
@@ -189,4 +194,30 @@ func padRight(_ value: String, to width: Int) -> String {
 
 func makeRepoURL(baseHost: URL, repo: Repository) -> URL {
     baseHost.appending(path: "/\(repo.owner)/\(repo.name)")
+}
+
+func formatRepoLabel(
+    repoName: String,
+    repoURL: URL,
+    includeURL: Bool,
+    linkEnabled: Bool
+) -> String {
+    includeURL ? formatURL(repoURL, linkEnabled: linkEnabled) : repoName
+}
+
+func formatEventLabel(
+    text: String,
+    url: URL?,
+    includeURL: Bool,
+    linkEnabled: Bool
+) -> String {
+    guard includeURL, let url else { return text }
+    return formatURL(url, linkEnabled: linkEnabled)
+}
+
+func formatURL(_ url: URL, linkEnabled: Bool) -> String {
+    if linkEnabled {
+        return Ansi.link(url.absoluteString, url: url, enabled: true)
+    }
+    return url.absoluteString
 }
