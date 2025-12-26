@@ -1,5 +1,5 @@
 ---
-summary: "RepoBar release checklist: build/package, optional notarization, and asset verification."
+summary: "RepoBar release checklist: versioning, Sparkle appcast, signing/notarization, and verification."
 read_when:
   - Preparing or validating a RepoBar release
   - Running package_app/notarize scripts or checking release assets
@@ -7,26 +7,28 @@ read_when:
 
 # Release checklist (RepoBar)
 
-1) Build, sign, and run tests  
-   - `Scripts/compile_and_run.sh` (debug smoke build, installs Info.plist, codesigns with default dev identity, runs tests).
+## ✅ Standard Release Flow (RepoBar/VibeTunnel parity)
+1) **Version + changelog**
+   - Update `version.env` (`MARKETING_VERSION`, `BUILD_NUMBER`).
+   - Finalize the top section in `CHANGELOG.md` (no “Unreleased”; header must start with the version).
 
-2) Package (release/debug)  
-   - `Scripts/package_app.sh [debug|release]`  
-     - Generates Info.plist with versions from `version.env`.  
-     - Codesigns using `CODESIGN_IDENTITY`/`CODE_SIGN_IDENTITY` if set.  
-     - For release, zips the dSYM to `RepoBar-<ver>.dSYM.zip`.
+2) **Run the full release script**
+   - `Scripts/release.sh`
+   - Builds, signs, notarizes, generates appcast entry + HTML notes from `CHANGELOG.md`, publishes GitHub release, tags/pushes.
 
-3) Notarize (optional but recommended for distribution)  
-   - Export a keychain profile for notarytool (e.g., “Xcode Notary”).  
-   - `NOTARIZE=1 NOTARY_PROFILE="Xcode Notary" Scripts/package_app.sh release`  
-     or call directly: `Scripts/notarize_app.sh .build/release/RepoBar.app "Xcode Notary"`.
+3) **Sparkle UX verification**
+   - About → “Check for Updates…”
+   - Menu only shows “Update ready, restart now?” once the update is downloaded.
+   - Sparkle dialog shows formatted release notes (not escaped HTML).
 
-4) Staple & verify (if notarized)  
-   - `xcrun stapler staple .build/release/RepoBar.app` (already run by the script).  
-   - `spctl --assess --verbose .build/release/RepoBar.app`
+## Manual steps (only when re-running pieces)
+1) Debug smoke build/tests  
+   - `Scripts/compile_and_run.sh`
 
-5) Final sanity
-   - Launch the notarized app once, verify menubar icon, Preferences window, and update check.
-   - Keep Apollo concurrency warning acknowledged; no other warnings should remain.
-6) Post-publish asset check  
-   - If releasing on GitHub, run `Scripts/check-release-assets.sh <tag>` to ensure both the app zip and dSYM zip are attached.
+2) Package + notarize  
+   - `Scripts/package_app.sh [debug|release]`
+   - Optional notarization: `NOTARIZE=1 NOTARY_PROFILE="Xcode Notary" Scripts/package_app.sh release`
+   - Verify: `spctl --assess --verbose .build/release/RepoBar.app`
+
+3) Post-publish asset check  
+   - `Scripts/check-release-assets.sh <tag>` (zip + dSYM present)
