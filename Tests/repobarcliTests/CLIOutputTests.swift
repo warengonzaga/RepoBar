@@ -83,15 +83,29 @@ struct CLIOutputTests {
         )
         let row = RepoRow(repo: repo, activityDate: nil, activityLabel: "-", activityLine: "push")
 
-        let withRelease = tableLines([row], useColor: false, includeURL: false, includeRelease: true, includeEvent: false, baseHost: baseHost)
-            .joined(separator: "\n")
+        let withRelease = tableLines(
+            [row],
+            useColor: false,
+            includeURL: false,
+            includeRelease: true,
+            includeEvent: false,
+            baseHost: baseHost
+        )
+        .joined(separator: "\n")
         #expect(withRelease.contains("REL"))
         #expect(withRelease.contains("RELEASED"))
         #expect(withRelease.contains("v1.0.0"))
         #expect(withRelease.contains(formatDateYYYYMMDD(releaseDate)))
 
-        let withoutRelease = tableLines([row], useColor: false, includeURL: false, includeRelease: false, includeEvent: false, baseHost: baseHost)
-            .joined(separator: "\n")
+        let withoutRelease = tableLines(
+            [row],
+            useColor: false,
+            includeURL: false,
+            includeRelease: false,
+            includeEvent: false,
+            baseHost: baseHost
+        )
+        .joined(separator: "\n")
         #expect(withoutRelease.contains("REL") == false)
         #expect(withoutRelease.contains("RELEASED") == false)
         #expect(withoutRelease.contains("v1.0.0") == false)
@@ -152,8 +166,15 @@ struct CLIOutputTests {
         )
         let row = RepoRow(repo: repo, activityDate: nil, activityLabel: "-", activityLine: "EVENTLINE-123")
 
-        let output = tableLines([row], useColor: false, includeURL: false, includeRelease: false, includeEvent: false, baseHost: baseHost)
-            .joined(separator: "\n")
+        let output = tableLines(
+            [row],
+            useColor: false,
+            includeURL: false,
+            includeRelease: false,
+            includeEvent: false,
+            baseHost: baseHost
+        )
+        .joined(separator: "\n")
         #expect(output.contains("EVENT") == false)
         #expect(output.contains("EVENTLINE-123") == false)
     }
@@ -181,9 +202,31 @@ struct CLIOutputTests {
         )
         let row = RepoRow(repo: repo, activityDate: nil, activityLabel: "-", activityLine: "EVENTLINE-123")
 
-        let output = tableLines([row], useColor: false, includeURL: false, includeRelease: false, includeEvent: true, baseHost: baseHost)
-            .joined(separator: "\n")
+        let output = tableLines(
+            [row],
+            useColor: false,
+            includeURL: false,
+            includeRelease: false,
+            includeEvent: true,
+            baseHost: baseHost
+        )
+        .joined(separator: "\n")
         #expect(output.contains("EVENT"))
         #expect(output.contains("EVENTLINE-123"))
+    }
+
+    @Test
+    func releasedUsesTodayAndYesterdayLabels() {
+        var calendar = Calendar.current
+        calendar.timeZone = Calendar.current.timeZone
+
+        let now = calendar.date(from: DateComponents(year: 2025, month: 12, day: 26, hour: 12))!
+        let today = calendar.date(byAdding: .hour, value: -2, to: now)!
+        let yesterday = calendar.date(byAdding: .day, value: -1, to: now)!
+        let older = calendar.date(byAdding: .day, value: -6, to: now)!
+
+        #expect(formatReleasedLabel(today, now: now) == "today")
+        #expect(formatReleasedLabel(yesterday, now: now) == "yesterday")
+        #expect(formatReleasedLabel(older, now: now) == formatDateYYYYMMDD(older))
     }
 }
