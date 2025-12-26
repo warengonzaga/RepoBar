@@ -215,7 +215,11 @@ func formatRepoLabel(
     includeURL: Bool,
     linkEnabled: Bool
 ) -> String {
-    includeURL ? formatURL(repoURL, linkEnabled: linkEnabled) : repoName
+    guard includeURL else { return repoName }
+    if linkEnabled {
+        return Ansi.link(repoName, url: repoURL, enabled: true)
+    }
+    return repoURL.absoluteString
 }
 
 func formatEventLabel(

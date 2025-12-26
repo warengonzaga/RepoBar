@@ -31,8 +31,11 @@ struct ReposCommand: CommanderRunnableCommand {
     @Option(name: .customLong("age"), help: "Max age in days for repo activity (default: 365)")
     var age: Int = 365
 
-    @Flag(names: [.customLong("url")], help: "Include clickable URLs in output")
-    var includeURL: Bool = false
+    @Flag(names: [.customLong("name")], help: "Show owner/repo instead of URL")
+    var showRepoName: Bool = false
+
+    @Flag(names: [.customLong("url")], help: "(Deprecated) URL is the default; kept for compatibility")
+    var legacyIncludeURL: Bool = false
 
     @Flag(names: [.customLong("release")], help: "Include latest release tag and date")
     var includeRelease: Bool = false
@@ -58,7 +61,8 @@ struct ReposCommand: CommanderRunnableCommand {
         self.limit = try values.decodeOption("limit")
         self.age = try values.decodeOption("age") ?? 365
         self.sort = try values.decodeOption("sort") ?? .activity
-        self.includeURL = values.flag("includeURL")
+        self.showRepoName = values.flag("showRepoName")
+        self.legacyIncludeURL = values.flag("legacyIncludeURL")
         self.includeRelease = values.flag("includeRelease")
         self.includeEvent = values.flag("includeEvent")
     }
@@ -112,10 +116,11 @@ struct ReposCommand: CommanderRunnableCommand {
         if self.output.jsonOutput {
             try renderJSON(rows, baseHost: baseHost)
         } else {
+            let includeURL = self.showRepoName == false || self.legacyIncludeURL
             renderTable(
                 rows,
                 useColor: self.output.useColor,
-                includeURL: self.includeURL,
+                includeURL: includeURL,
                 includeRelease: self.includeRelease,
                 includeEvent: self.includeEvent,
                 baseHost: baseHost

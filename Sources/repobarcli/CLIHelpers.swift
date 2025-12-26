@@ -222,7 +222,7 @@ func printHelp(_ target: HelpTarget) {
         repobarcli - list repositories by activity, issues, PRs, stars
 
         Usage:
-          repobarcli [repos] [--limit N] [--age DAYS] [--url] [--release] [--event] [--json] [--sort KEY]
+          repobarcli [repos] [--limit N] [--age DAYS] [--name] [--release] [--event] [--json] [--sort KEY]
           repobarcli login [--host URL] [--client-id ID] [--client-secret SECRET] [--loopback-port PORT]
           repobarcli logout
           repobarcli status [--json]
@@ -230,7 +230,8 @@ func printHelp(_ target: HelpTarget) {
         Options:
           --limit N    Max repositories to fetch (default: all accessible)
           --age DAYS   Only show repos with activity in the last N days (default: 365)
-          --url        Include clickable URLs in output
+          --name       Show owner/repo instead of URL (URL is default)
+          --url        (Deprecated) URL is the default
           --release    Include latest release tag and date
           --event      Show activity event column (hidden by default)
           --json       Output JSON instead of formatted table
@@ -243,12 +244,13 @@ func printHelp(_ target: HelpTarget) {
         repobarcli repos - list repositories
 
         Usage:
-          repobarcli repos [--limit N] [--age DAYS] [--url] [--release] [--event] [--json] [--sort KEY]
+          repobarcli repos [--limit N] [--age DAYS] [--name] [--release] [--event] [--json] [--sort KEY]
 
         Options:
           --limit N    Max repositories to fetch (default: all accessible)
           --age DAYS   Only show repos with activity in the last N days (default: 365)
-          --url        Include clickable URLs in output
+          --name       Show owner/repo instead of URL (URL is default)
+          --url        (Deprecated) URL is the default
           --release    Include latest release tag and date
           --event      Show activity event column (hidden by default)
           --json       Output JSON instead of formatted table
