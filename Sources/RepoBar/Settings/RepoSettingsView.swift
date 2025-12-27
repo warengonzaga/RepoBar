@@ -136,6 +136,7 @@ private struct RepoInputRow<Accessory: View>: View {
     var accessory: () -> Accessory
 
     @EnvironmentObject var appState: AppState
+    @EnvironmentObject var session: Session
     @State private var suggestions: [Repository] = []
     @State private var isLoading = false
     @State private var showSuggestions = false
@@ -256,24 +257,28 @@ private struct RepoInputRow<Accessory: View>: View {
         }
 
         do {
+            let includeForks = await MainActor.run { self.session.settings.showForks }
             let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
             let prefetched = try? await self.appState.github.prefetchedRepositories()
 
             let localMatches: [Repository] = {
                 guard let prefetched else { return [] }
-                if trimmed.isEmpty { return Array(prefetched.prefix(8)) }
-                return prefetched.filter { $0.fullName.localizedCaseInsensitiveContains(trimmed) }
+                let filtered = RepositoryFilter.apply(prefetched, includeForks: includeForks)
+                if trimmed.isEmpty { return Array(filtered.prefix(8)) }
+                return filtered.filter { $0.fullName.localizedCaseInsensitiveContains(trimmed) }
             }()
 
             var merged = Array(localMatches.prefix(8))
 
             if trimmed.count >= 3 {
                 let remote = try await self.appState.github.searchRepositories(matching: trimmed)
-                merged = Self.merge(local: localMatches, remote: remote, limit: 8)
+                let filteredRemote = RepositoryFilter.apply(remote, includeForks: includeForks)
+                merged = Self.merge(local: localMatches, remote: filteredRemote, limit: 8)
             }
 
             if merged.isEmpty, let prefetched {
-                merged = Array(prefetched.prefix(8)) // Fallback to cached recents if nothing matches.
+                let filtered = RepositoryFilter.apply(prefetched, includeForks: includeForks)
+                merged = Array(filtered.prefix(8)) // Fallback to cached recents if nothing matches.
             }
 
             guard !Task.isCancelled else { return }
