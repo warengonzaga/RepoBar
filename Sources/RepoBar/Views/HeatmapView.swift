@@ -62,11 +62,11 @@ struct HeatmapView: View {
         if self.isHighlighted {
             let base = Color(nsColor: .selectedMenuItemTextColor)
             return [
-                base.opacity(0.28),
-                base.opacity(0.46),
-                base.opacity(0.64),
-                base.opacity(0.82),
-                base.opacity(0.92)
+                base.opacity(0.36),
+                base.opacity(0.56),
+                base.opacity(0.72),
+                base.opacity(0.86),
+                base.opacity(0.96)
             ]
         }
         switch self.accentTone {
