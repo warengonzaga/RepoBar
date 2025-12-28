@@ -52,24 +52,26 @@ final class SparkleController: NSObject {
             let isBundledApp = bundleURL.pathExtension == "app"
             let isSigned = SparkleController.isDeveloperIDSigned(bundleURL: bundleURL)
             // Mirror Trimmy: disable Sparkle entirely for unsigned/dev runs to avoid dialogs and signature errors.
-            if isBundledApp, isSigned {
-                let saved = (UserDefaults.standard.object(forKey: self.defaultsKey) as? Bool) ?? true
-                let controller = SPUStandardUpdaterController(
-                    startingUpdater: false,
-                    updaterDelegate: self,
-                    userDriverDelegate: nil
-                )
-                controller.automaticallyChecksForUpdates = saved
-                controller.startUpdater()
-                self.updater = controller
-                self.updateStatus = UpdateStatus()
-            } else {
-                self.updater = DisabledUpdaterController()
-                self.updateStatus = .disabled
-            }
+            let canUseSparkle = isBundledApp && isSigned
         #else
-            self.updater = DisabledUpdaterController()
-            self.updateStatus = .disabled
+            let canUseSparkle = false
+        #endif
+
+        self.updateStatus = canUseSparkle ? UpdateStatus() : .disabled
+        self.updater = DisabledUpdaterController()
+        super.init()
+
+        #if canImport(Sparkle)
+            guard canUseSparkle else { return }
+            let saved = (UserDefaults.standard.object(forKey: self.defaultsKey) as? Bool) ?? true
+            let controller = SPUStandardUpdaterController(
+                startingUpdater: false,
+                updaterDelegate: self,
+                userDriverDelegate: nil
+            )
+            controller.automaticallyChecksForUpdates = saved
+            controller.startUpdater()
+            self.updater = controller
         #endif
     }
 
