@@ -395,31 +395,60 @@ struct AccountSettingsView: View {
             Section("GitHub.com") {
                 switch self.session.account {
                 case let .loggedIn(user):
-                    VStack(alignment: .leading, spacing: 8) {
-                        Text("Signed in as \(user.username) on \(user.host.host ?? "github.com")")
-                            .font(.body)
-                        Text("Use the button below to sign out.")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack(spacing: 10) {
+                            Image(systemName: "checkmark.seal.fill")
+                                .foregroundStyle(.green)
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text("Signed in")
+                                    .font(.headline)
+                                Text("\(user.username) · \(user.host.host ?? "github.com")")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        LabeledContent("Account") {
+                            Text(user.username)
+                        }
+                        LabeledContent("Host") {
+                            Text(user.host.host ?? "github.com")
+                        }
                         Button("Log out") {
                             Task {
                                 await self.appState.auth.logout()
                                 self.session.account = .loggedOut
                             }
                         }
+                        .buttonStyle(.bordered)
                     }
                 default:
-                    TextField("Client ID", text: self.$clientID)
-                    SecureField("Client Secret", text: self.$clientSecret)
-                    Button(self.session.account == .loggingIn ? "Signing in…" : "Sign in") { self.login() }
-                        .disabled(self.session.account == .loggingIn)
+                    LabeledContent("Client ID") {
+                        TextField("", text: self.$clientID)
+                    }
+                    LabeledContent("Client Secret") {
+                        SecureField("", text: self.$clientSecret)
+                    }
+                    HStack(spacing: 8) {
+                        if self.session.account == .loggingIn {
+                            ProgressView()
+                        }
+                        Button(self.session.account == .loggingIn ? "Signing in…" : "Sign in") { self.login() }
+                            .disabled(self.session.account == .loggingIn)
+                            .buttonStyle(.borderedProminent)
+                    }
+                    Text("Uses browser-based OAuth. Tokens are stored in the system Keychain.")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
             }
 
             Section("Enterprise (optional)") {
-                TextField("Base URL (https://host)", text: self.$enterpriseHost)
-                Text("Trusted TLS only; leave blank if unused")
+                LabeledContent("Base URL") {
+                    TextField("https://host", text: self.$enterpriseHost)
+                }
+                Text("Trusted TLS only; leave blank if unused.")
                     .font(.caption)
+                    .foregroundStyle(.secondary)
             }
 
             if let validationError {
@@ -428,7 +457,9 @@ struct AccountSettingsView: View {
                     .foregroundStyle(.red)
             }
         }
-        .padding()
+        .formStyle(.grouped)
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
         .onAppear {
             if let enterprise = self.session.settings.enterpriseHost {
                 self.enterpriseHost = enterprise.absoluteString
