@@ -371,10 +371,10 @@ extension RepoEvent {
         let refType = self.payload.refType?.replacingOccurrences(of: "_", with: " ")
         let ref = self.payload.ref
         switch (refType, ref) {
-        case let (type?, ref?): "\(prefix) \(type) \(ref)"
-        case let (type?, nil): "\(prefix) \(type)"
-        case let (nil, ref?): "\(prefix) \(ref)"
-        default: prefix
+        case let (type?, ref?): return "\(prefix) \(type) \(ref)"
+        case let (type?, nil): return "\(prefix) \(type)"
+        case let (nil, ref?): return "\(prefix) \(ref)"
+        default: return prefix
         }
     }
 
