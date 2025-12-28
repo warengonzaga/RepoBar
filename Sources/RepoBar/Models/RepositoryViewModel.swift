@@ -18,6 +18,7 @@ struct RepositoryViewModel: Identifiable, Equatable {
     let forks: Int
     let activityLine: String?
     let activityURL: URL?
+    let activityEvents: [ActivityEvent]
     let heatmap: [HeatmapCell]
     let sortOrder: Int?
     let error: String?
@@ -56,5 +57,6 @@ struct RepositoryViewModel: Identifiable, Equatable {
 
         self.activityLine = repo.activityLine
         self.activityURL = repo.activityURL
+        self.activityEvents = repo.activityEvents
     }
 }

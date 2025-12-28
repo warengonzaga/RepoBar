@@ -18,6 +18,7 @@ public struct Repository: Identifiable, Equatable, Sendable {
     public var pushedAt: Date?
     public var latestRelease: Release?
     public var latestActivity: ActivityEvent?
+    public var activityEvents: [ActivityEvent]
     public var traffic: TrafficStats?
     public var heatmap: [HeatmapCell]
 
@@ -39,6 +40,7 @@ public struct Repository: Identifiable, Equatable, Sendable {
         pushedAt: Date? = nil,
         latestRelease: Release?,
         latestActivity: ActivityEvent?,
+        activityEvents: [ActivityEvent] = [],
         traffic: TrafficStats?,
         heatmap: [HeatmapCell]
     ) {
@@ -59,6 +61,7 @@ public struct Repository: Identifiable, Equatable, Sendable {
         self.pushedAt = pushedAt
         self.latestRelease = latestRelease
         self.latestActivity = latestActivity
+        self.activityEvents = activityEvents
         self.traffic = traffic
         self.heatmap = heatmap
     }
@@ -84,6 +87,7 @@ public struct Repository: Identifiable, Equatable, Sendable {
             pushedAt: self.pushedAt,
             latestRelease: self.latestRelease,
             latestActivity: self.latestActivity,
+            activityEvents: self.activityEvents,
             traffic: self.traffic,
             heatmap: self.heatmap
         )

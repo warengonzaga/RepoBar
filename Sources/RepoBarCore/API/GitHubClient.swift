@@ -163,6 +163,7 @@ public actor GitHubClient {
         let cachedOpenPulls = cache.openPulls ?? 0
         let cachedCiDetails = cache.ciDetails ?? CIStatusDetails(status: .unknown, runCount: nil)
         let cachedActivity = cache.latestActivity
+        let cachedActivityEvents = cache.activityEvents ?? []
         let cachedTraffic = cache.traffic
         let cachedHeatmap = cache.heatmap ?? []
         let cachedRelease = cache.latestRelease
@@ -182,9 +183,9 @@ public actor GitHubClient {
         async let ciResult: Result<CIStatusDetails, Error> = shouldFetchCI
             ? self.capture { try await self.ciStatus(owner: owner, name: name) }
             : .success(cachedCiDetails)
-        async let activityResult: Result<ActivityEvent?, Error> = shouldFetchActivity
-            ? self.capture { try await self.latestActivity(owner: owner, name: name) }
-            : .success(cachedActivity)
+        async let activityResult: Result<ActivitySnapshot, Error> = shouldFetchActivity
+            ? self.capture { try await self.recentActivity(owner: owner, name: name, limit: 10) }
+            : .success(ActivitySnapshot(events: cachedActivityEvents, latest: cachedActivity))
         async let trafficResult: Result<TrafficStats?, Error> = shouldFetchTraffic
             ? self.capture { try await self.trafficStats(owner: owner, name: name) }
             : .success(cachedTraffic)
@@ -227,17 +228,21 @@ public actor GitHubClient {
         let ciRunCount = ciDetails?.runCount
 
         let activity: ActivityEvent?
+        let activityEvents: [ActivityEvent]
         switch await activityResult {
-        case let .success(value):
-            activity = value
+        case let .success(snapshot):
+            activity = snapshot.latest ?? snapshot.events.first
+            activityEvents = snapshot.events
             if shouldFetchActivity {
-                cache.latestActivity = value
+                cache.latestActivity = activity
+                cache.activityEvents = snapshot.events
                 cache.activityFetchedAt = now
                 didUpdateCache = true
             }
         case let .failure(error):
             accumulator.absorb(error)
             activity = cache.latestActivity
+            activityEvents = cache.activityEvents ?? []
         }
 
         let traffic: TrafficStats?
@@ -286,6 +291,7 @@ public actor GitHubClient {
         let finalPulls = openPulls
         let finalRelease = releaseREST
         let finalActivity: ActivityEvent? = activity
+        let finalActivityEvents = activityEvents
 
         self.repoDetailCache[cacheKey] = cache
         if didUpdateCache {
@@ -310,6 +316,7 @@ public actor GitHubClient {
             pushedAt: details.pushedAt,
             latestRelease: finalRelease,
             latestActivity: finalActivity,
+            activityEvents: finalActivityEvents,
             traffic: traffic,
             heatmap: heatmap
         )
@@ -323,13 +330,15 @@ public actor GitHubClient {
         async let openPullsResult: Result<Int, Error> = self.capture {
             try await self.openPullRequestCount(owner: owner, name: name)
         }
-        async let activityResult: Result<ActivityEvent?, Error> = self.capture {
-            try await self.latestActivity(owner: owner, name: name)
+        async let activityResult: Result<ActivitySnapshot, Error> = self.capture {
+            try await self.recentActivity(owner: owner, name: name, limit: 10)
         }
 
         let openPulls = await self.value(from: openPullsResult, into: &accumulator) ?? 0
         let issues = max(item.openIssuesCount - openPulls, 0)
-        let activity: ActivityEvent? = await self.value(from: activityResult, into: &accumulator) ?? nil // swiftlint:disable:this redundant_nil_coalescing
+        let snapshot = await self.value(from: activityResult, into: &accumulator)
+        let activity: ActivityEvent? = snapshot?.latest ?? snapshot?.events.first
+        let activityEvents = snapshot?.events ?? []
 
         return Repository(
             id: item.id.description,
@@ -349,6 +358,7 @@ public actor GitHubClient {
             pushedAt: item.pushedAt,
             latestRelease: nil,
             latestActivity: activity,
+            activityEvents: activityEvents,
             traffic: nil,
             heatmap: []
         )
@@ -621,7 +631,12 @@ public actor GitHubClient {
         return CIStatusDetails(status: status, runCount: runs.totalCount)
     }
 
-    private func latestActivity(owner: String, name: String) async throws -> ActivityEvent? {
+    private struct ActivitySnapshot: Sendable {
+        let events: [ActivityEvent]
+        let latest: ActivityEvent?
+    }
+
+    private func recentActivity(owner: String, name: String, limit: Int) async throws -> ActivitySnapshot {
         let token = try await validAccessToken()
         var components = URLComponents(
             url: self.apiHost.appending(path: "/repos/\(owner)/\(name)/events"),
@@ -630,22 +645,14 @@ public actor GitHubClient {
         components.queryItems = [URLQueryItem(name: "per_page", value: "30")]
         let (data, _) = try await authorizedGet(url: components.url!, token: token)
         let events = try jsonDecoder.decode([RepoEvent].self, from: data)
-        let filtered = events.first { event in
-            event.payload.comment != nil || event.payload.issue != nil || event.payload.pullRequest != nil
+        let mapped = events.map { event in
+            (event: event, activity: event.activityEvent(owner: owner, name: name))
         }
-        guard let event = filtered else { return nil }
-
-        let preview = event.payload.comment?.bodyPreview
-            ?? event.payload.issue?.title
-            ?? event.payload.pullRequest?.title
-            ?? event.displayTitle
-        let fallbackURL = URL(string: "https://github.com/\(owner)/\(name)")!
-        let url = event.payload.comment?.htmlUrl ?? event.payload.issue?.htmlUrl ?? event.payload.pullRequest?.htmlUrl ?? fallbackURL
-        return ActivityEvent(
-            title: preview,
-            actor: event.actor.login,
-            date: event.createdAt,
-            url: url
+        let limited = Array(mapped.prefix(max(limit, 0)))
+        let preferred = limited.first(where: { $0.event.hasRichPayload })?.activity
+        return ActivitySnapshot(
+            events: limited.map(\.activity),
+            latest: preferred ?? limited.first?.activity
         )
     }
 

@@ -23,6 +23,20 @@ struct RepoDetailCacheStoreTests {
                 date: now,
                 url: URL(string: "https://example.com/pr/1")!
             ),
+            activityEvents: [
+                ActivityEvent(
+                    title: "Merged PR",
+                    actor: "alice",
+                    date: now,
+                    url: URL(string: "https://example.com/pr/1")!
+                ),
+                ActivityEvent(
+                    title: "Opened issue",
+                    actor: "bob",
+                    date: now.addingTimeInterval(-600),
+                    url: URL(string: "https://example.com/issue/2")!
+                )
+            ],
             activityFetchedAt: now,
             traffic: TrafficStats(uniqueVisitors: 9, uniqueCloners: 2),
             trafficFetchedAt: now,
@@ -39,6 +53,7 @@ struct RepoDetailCacheStoreTests {
         #expect(result.openPulls == 7)
         #expect(result.ciDetails?.status == .passing)
         #expect(result.latestActivity?.actor == "alice")
+        #expect(result.activityEvents?.count == 2)
         #expect(result.traffic?.uniqueVisitors == 9)
         #expect(result.heatmap?.count == 1)
         #expect(result.latestRelease?.tag == "v1.0.0")

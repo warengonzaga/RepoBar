@@ -210,6 +210,29 @@ extension RepoEvent {
         return "\(base) \(actionLabel)"
     }
 
+    var hasRichPayload: Bool {
+        self.payload.comment != nil || self.payload.issue != nil || self.payload.pullRequest != nil
+    }
+
+    func activityEvent(owner: String, name: String) -> ActivityEvent {
+        let preview = self.payload.comment?.bodyPreview
+            ?? self.payload.issue?.title
+            ?? self.payload.pullRequest?.title
+            ?? self.displayTitle
+        let fallbackURL = URL(string: "https://github.com/\(owner)/\(name)")!
+        let url = self.payload.comment?.htmlUrl
+            ?? self.payload.issue?.htmlUrl
+            ?? self.payload.pullRequest?.htmlUrl
+            ?? fallbackURL
+        let trimmed = preview.trimmingCharacters(in: .whitespacesAndNewlines)
+        return ActivityEvent(
+            title: trimmed.isEmpty ? self.displayTitle : trimmed,
+            actor: self.actor.login,
+            date: self.createdAt,
+            url: url
+        )
+    }
+
     static func displayName(for type: String) -> String {
         return switch type {
         case "PullRequestEvent": "Pull Request"

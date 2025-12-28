@@ -5,12 +5,13 @@ public extension ActivityEvent {
 }
 
 public extension Repository {
-    var activityLine: String? { self.latestActivity?.line }
-    var activityURL: URL? { self.latestActivity?.url }
+    var activityLine: String? { (self.latestActivity ?? self.activityEvents.first)?.line }
+    var activityURL: URL? { (self.latestActivity ?? self.activityEvents.first)?.url }
 
     /// Returns the most recent activity date between latest activity and last push.
     var activityDate: Date? {
-        switch (self.latestActivity?.date, self.pushedAt) {
+        let activityDate = (self.latestActivity ?? self.activityEvents.first)?.date
+        switch (activityDate, self.pushedAt) {
         case let (left?, right?):
             max(left, right)
         case let (left?, nil):

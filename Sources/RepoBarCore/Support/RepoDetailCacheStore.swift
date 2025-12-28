@@ -6,6 +6,7 @@ struct RepoDetailCache: Codable, Sendable {
     var ciDetails: CIStatusDetails?
     var ciFetchedAt: Date?
     var latestActivity: ActivityEvent?
+    var activityEvents: [ActivityEvent]?
     var activityFetchedAt: Date?
     var traffic: TrafficStats?
     var trafficFetchedAt: Date?

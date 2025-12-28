@@ -30,12 +30,14 @@ struct RepositoryViewModelTests {
             openPulls: 3,
             latestRelease: release,
             latestActivity: activity,
+            activityEvents: [activity],
             traffic: TrafficStats(uniqueVisitors: 5, uniqueCloners: 2),
             heatmap: []
         )
         let vm = RepositoryViewModel(repo: repo, now: Date())
         #expect(vm.latestRelease == release.name)
         #expect(vm.activityLine?.contains("alice") == true)
+        #expect(vm.activityEvents.count == 1)
         #expect(vm.issues == 2)
         #expect(vm.pulls == 3)
         #expect(vm.trafficVisitors == 5)

@@ -110,6 +110,11 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
         self.open(url: url)
     }
 
+    @objc private func openActivityEvent(_ sender: NSMenuItem) {
+        guard let url = sender.representedObject as? URL else { return }
+        self.open(url: url)
+    }
+
     @objc private func copyRepoName(_ sender: NSMenuItem) {
         guard let fullName = self.repoFullName(from: sender) else { return }
         let pb = NSPasteboard.general
@@ -356,6 +361,13 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
                 systemImage: "clock.arrow.circlepath"))
         }
 
+        let activityItems = self.repoActivityItems(for: repo)
+        if !activityItems.isEmpty {
+            menu.addItem(.separator())
+            menu.addItem(self.infoItem("Recent Activity"))
+            activityItems.forEach { menu.addItem($0) }
+        }
+
         let detailItems = self.repoDetailItems(for: repo)
         if !detailItems.isEmpty {
             menu.addItem(.separator())
@@ -422,6 +434,19 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
         return items
     }
 
+    private func repoActivityItems(for repo: RepositoryViewModel) -> [NSMenuItem] {
+        let now = Date()
+        return repo.activityEvents.prefix(10).map { event in
+            let when = RelativeFormatter.string(from: event.date, relativeTo: now)
+            let title = "\(when) • \(event.actor): \(event.title)"
+            return self.actionItem(
+                title: title,
+                action: #selector(self.openActivityEvent),
+                represented: event.url,
+                systemImage: "clock")
+        }
+    }
+
     private func infoItem(_ title: String) -> NSMenuItem {
         let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
         item.isEnabled = false
@@ -433,7 +458,7 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
         title: String,
         action: Selector,
         keyEquivalent: String = "",
-        represented: String? = nil,
+        represented: Any? = nil,
         systemImage: String? = nil
     ) -> NSMenuItem {
         let item = NSMenuItem(title: title, action: action, keyEquivalent: keyEquivalent)

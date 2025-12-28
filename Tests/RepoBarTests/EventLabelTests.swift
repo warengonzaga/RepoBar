@@ -35,4 +35,23 @@ struct EventLabelTests {
         )
         #expect(event.displayTitle == "Project Card")
     }
+
+    @Test
+    func activityEventUsesIssueTitleAndRepoFallback() {
+        let event = RepoEvent(
+            type: "IssuesEvent",
+            actor: EventActor(login: "octo"),
+            payload: EventPayload(
+                action: "opened",
+                comment: nil,
+                issue: EventIssue(title: "Fix it", htmlUrl: URL(string: "https://example.com/issue/1")!),
+                pullRequest: nil
+            ),
+            createdAt: Date()
+        )
+        let activity = event.activityEvent(owner: "steipete", name: "RepoBar")
+        #expect(activity.title == "Fix it")
+        #expect(activity.actor == "octo")
+        #expect(activity.url.absoluteString == "https://example.com/issue/1")
+    }
 }
