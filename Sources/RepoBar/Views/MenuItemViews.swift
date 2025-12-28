@@ -163,7 +163,7 @@ struct MenuCIBadge: View {
     @Environment(\.menuItemHighlighted) private var isHighlighted
 
     var body: some View {
-        HStack(spacing: 3) {
+        HStack(spacing: 2) {
             Circle()
                 .fill(self.color)
                 .frame(width: 6, height: 6)
@@ -312,7 +312,7 @@ struct MenuRepoFiltersView: View {
     @Bindable var session: Session
 
     var body: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 1) {
             Image(systemName: "line.3.horizontal.decrease.circle")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
