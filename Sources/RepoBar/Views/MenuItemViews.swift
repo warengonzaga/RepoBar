@@ -6,25 +6,34 @@ struct RepoMenuCardView: View {
     let isPinned: Bool
     let isHighlighted: Bool
     let showsSubmenuIndicator: Bool
+    let showsSeparator: Bool
     let showHeatmap: Bool
     let heatmapSpan: HeatmapSpan
     let accentTone: AccentTone
 
     var body: some View {
-        VStack(alignment: .leading, spacing: self.verticalSpacing) {
-            self.header
-            self.stats
-            self.activity
-            self.errorOrLimit
-            self.heatmap
+        VStack(spacing: 0) {
+            ZStack(alignment: .leading) {
+                self.selectionBackground
+                VStack(alignment: .leading, spacing: self.verticalSpacing) {
+                    self.header
+                    self.stats
+                    self.activity
+                    self.errorOrLimit
+                    self.heatmap
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+            }
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .foregroundStyle(MenuHighlightStyle.primary(self.isHighlighted))
+            if self.showsSeparator {
+                Rectangle()
+                    .fill(Color(nsColor: .separatorColor))
+                    .frame(height: 1)
+                    .padding(.leading, 12)
+            }
         }
-        .padding(self.cardPadding)
-        .background(self.background)
-        .overlay(
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .stroke(Color.gray.opacity(0.12), lineWidth: 1)
-        )
-        .foregroundStyle(MenuHighlightStyle.primary(self.isHighlighted))
     }
 
     @ViewBuilder
@@ -58,7 +67,7 @@ struct RepoMenuCardView: View {
 
     @ViewBuilder
     private var stats: some View {
-        HStack(spacing: 8) {
+        HStack(spacing: 10) {
             MenuCIBadge(status: self.repo.ciStatus, runCount: self.repo.ciRunCount, isHighlighted: self.isHighlighted)
             MenuStatBadge(label: "Issues", value: self.repo.issues, isHighlighted: self.isHighlighted)
             MenuStatBadge(label: "PRs", value: self.repo.pulls, isHighlighted: self.isHighlighted)
@@ -109,20 +118,14 @@ struct RepoMenuCardView: View {
         }
     }
 
-    private var background: some View {
-        ZStack {
-            RoundedRectangle(cornerRadius: 12, style: .continuous)
-                .fill(Color(nsColor: .controlBackgroundColor))
-            if self.isHighlighted {
-                RoundedRectangle(cornerRadius: 10, style: .continuous)
-                    .fill(MenuHighlightStyle.selectionBackground(true))
-                    .opacity(0.9)
-            }
-        }
+    private var selectionBackground: some View {
+        RoundedRectangle(cornerRadius: 6, style: .continuous)
+            .fill(MenuHighlightStyle.selectionBackground(self.isHighlighted))
+            .opacity(self.isHighlighted ? 1 : 0)
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
-    private var cardPadding: CGFloat { 10 }
-    private var verticalSpacing: CGFloat { 8 }
+    private var verticalSpacing: CGFloat { 6 }
 }
 
 struct MenuStatBadge: View {
@@ -131,18 +134,9 @@ struct MenuStatBadge: View {
     let isHighlighted: Bool
 
     var body: some View {
-        HStack(spacing: 4) {
-            Text(self.label)
-                .font(.caption2)
-            Text("\(self.value)")
-                .font(.caption2)
-                .bold()
-        }
-        .padding(.horizontal, 6)
-        .padding(.vertical, 4)
-        .background(MenuHighlightStyle.badgeBackground(self.isHighlighted))
-        .foregroundStyle(MenuHighlightStyle.badgeText(self.isHighlighted))
-        .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+        Text("\(self.label) \(self.value)")
+            .font(.caption2)
+            .foregroundStyle(MenuHighlightStyle.secondary(self.isHighlighted))
     }
 }
 
@@ -152,26 +146,18 @@ struct MenuCIBadge: View {
     let isHighlighted: Bool
 
     var body: some View {
-        HStack(spacing: 4) {
+        HStack(spacing: 6) {
             Circle()
                 .fill(self.color)
-                .frame(width: 7, height: 7)
+                .frame(width: 6, height: 6)
             Text("CI")
                 .font(.caption2)
             if let runCount {
                 Text("\(runCount)")
                     .font(.caption2).bold()
-                    .padding(.horizontal, 4)
-                    .padding(.vertical, 2)
-                    .background(Color.black.opacity(0.12))
-                    .clipShape(Capsule())
             }
         }
-        .padding(.horizontal, 8)
-        .padding(.vertical, 4)
-        .background(self.color.opacity(self.isHighlighted ? 0.45 : 0.18))
-        .foregroundStyle(self.isHighlighted ? MenuHighlightStyle.badgeText(true) : self.color)
-        .clipShape(Capsule(style: .continuous))
+        .foregroundStyle(self.isHighlighted ? MenuHighlightStyle.primary(true) : self.color)
     }
 
     private var color: Color {
@@ -273,12 +259,4 @@ enum MenuHighlightStyle {
         highlighted ? Color(nsColor: .selectedContentBackgroundColor) : .clear
     }
 
-    static func badgeBackground(_ highlighted: Bool) -> Color {
-        if highlighted { return Color(nsColor: .selectedContentBackgroundColor).opacity(0.25) }
-        return Color(nsColor: .windowBackgroundColor)
-    }
-
-    static func badgeText(_ highlighted: Bool) -> Color {
-        highlighted ? Color(nsColor: .selectedMenuItemTextColor) : .primary
-    }
 }

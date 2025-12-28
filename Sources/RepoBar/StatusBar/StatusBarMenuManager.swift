@@ -250,19 +250,18 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
                 .padding(.vertical, 8)
             menu.addItem(self.viewItem(for: emptyState, enabled: false))
         } else {
-            for repo in repos {
+            for (index, repo) in repos.enumerated() {
                 let isPinned = settings.pinnedRepositories.contains(repo.title)
                 let card = RepoMenuCardView(
                     repo: repo,
                     isPinned: isPinned,
                     isHighlighted: false,
                     showsSubmenuIndicator: true,
+                    showsSeparator: index < repos.count - 1,
                     showHeatmap: settings.showHeatmap,
                     heatmapSpan: settings.heatmapSpan,
                     accentTone: settings.accentTone
                 )
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
 
                 let item = self.viewItem(for: card, enabled: true, highlightable: true) { highlighted in
                     AnyView(
@@ -271,12 +270,11 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
                             isPinned: isPinned,
                             isHighlighted: highlighted,
                             showsSubmenuIndicator: true,
+                            showsSeparator: index < repos.count - 1,
                             showHeatmap: settings.showHeatmap,
                             heatmapSpan: settings.heatmapSpan,
                             accentTone: settings.accentTone
                         )
-                        .padding(.horizontal, 10)
-                        .padding(.vertical, 6)
                     )
                 }
                 item.representedObject = repo.title

@@ -13,7 +13,8 @@ struct ContributionHeaderView: View {
             VStack(alignment: .leading, spacing: 8) {
                 self.content
             }
-            .task {
+            .task(id: self.session.hasLoadedRepositories) {
+                guard self.session.hasLoadedRepositories else { return }
                 self.isLoading = true
                 self.failed = false
                 await self.appState.loadContributionHeatmapIfNeeded(for: self.username)
@@ -27,7 +28,10 @@ struct ContributionHeaderView: View {
 
     @ViewBuilder
     private var content: some View {
-        if self.isLoading {
+        if !self.session.hasLoadedRepositories {
+            ProgressView()
+                .frame(maxWidth: .infinity, minHeight: 80, maxHeight: 120, alignment: .center)
+        } else if self.isLoading {
             ProgressView()
                 .frame(maxWidth: .infinity, minHeight: 80, maxHeight: 120, alignment: .center)
         } else if self.failed {
