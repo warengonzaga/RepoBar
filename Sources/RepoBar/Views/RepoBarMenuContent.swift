@@ -142,7 +142,6 @@ struct RepoBarMenuContent: View {
                     }
                 }
 
-                Divider()
                 self.footer
             }
         }
@@ -152,12 +151,12 @@ struct RepoBarMenuContent: View {
 
     private var footer: some View {
         VStack(alignment: .leading, spacing: 6) {
-            Button("About RepoBar") { AppActions.openAbout() }
             Button("Preferences…") {
                 NSApp.activate(ignoringOtherApps: true)
                 self.openSettings()
             }
                 .keyboardShortcut(",", modifiers: [.command])
+            Button("About RepoBar") { AppActions.openAbout() }
             if self.updateStatus.isUpdateReady {
                 Button("Restart to update") { SparkleController.shared.checkForUpdates() }
             }
