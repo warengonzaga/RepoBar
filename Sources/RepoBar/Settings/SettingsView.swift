@@ -281,6 +281,7 @@ struct GeneralSettingsView: View {
                 Spacer()
                 Button("Quit RepoBar") { NSApp.terminate(nil) }
             }
+            .padding(.top, 8)
         }
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
