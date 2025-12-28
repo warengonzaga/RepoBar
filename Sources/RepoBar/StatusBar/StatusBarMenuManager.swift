@@ -206,9 +206,9 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
                 appState: self.appState
             )
                 .padding(.horizontal, 10)
-                .padding(.top, 6)
-                .padding(.bottom, 4)
-            menu.addItem(self.viewItem(for: header, enabled: false))
+                .padding(.top, 10)
+                .padding(.bottom, 6)
+            menu.addItem(self.viewItem(for: header, enabled: true))
             menu.addItem(.separator())
         }
 
@@ -484,7 +484,7 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
             let pinned = Set(session.settings.pinnedRepositories)
             sorted = sorted.filter { pinned.contains($0.title) }
         }
-        let onlyWith = session.menuRepoFilter.onlyWith
+        let onlyWith = session.menuOnlyWith
         if onlyWith.isActive {
             sorted = sorted.filter { onlyWith.matches($0.source) }
         }
@@ -494,7 +494,7 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
     private func emptyStateMessage(for session: Session) -> (String, String) {
         let hasPinned = !session.settings.pinnedRepositories.isEmpty
         let isPinnedScope = session.menuRepoScope == .pinned
-        let hasFilter = session.menuRepoFilter.onlyWith.isActive
+        let hasFilter = session.menuOnlyWith.isActive
         if isPinnedScope, !hasPinned {
             return ("No pinned repositories", "Pin a repository to see activity here.")
         }

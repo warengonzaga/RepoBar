@@ -48,6 +48,7 @@ struct RepoMenuCardView: View {
         HStack(alignment: .top, spacing: 8) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
+                    MenuStatusDot(status: self.repo.ciStatus)
                     Text(self.repo.title)
                         .font(.subheadline)
                         .fontWeight(.regular)
@@ -74,8 +75,6 @@ struct RepoMenuCardView: View {
             MenuCIBadge(status: self.repo.ciStatus, runCount: nil)
             MenuStatBadge(label: "Issues", value: self.repo.issues)
             MenuStatBadge(label: "PRs", value: self.repo.pulls)
-            MenuStatBadge(label: "Visitors", valueText: self.repo.trafficVisitors.map(String.init) ?? "--")
-            MenuStatBadge(label: "Cloners", valueText: self.repo.trafficCloners.map(String.init) ?? "--")
         }
     }
 
@@ -165,14 +164,33 @@ struct MenuCIBadge: View {
     }
 
     private var color: Color {
-        let base: NSColor = switch self.status {
+        Self.dotColor(for: self.status, isLightAppearance: self.isLightAppearance)
+    }
+
+    private var isLightAppearance: Bool {
+        NSApp.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .aqua
+    }
+
+    static func dotColor(for status: CIStatus, isLightAppearance: Bool) -> Color {
+        let base: NSColor = switch status {
         case .passing: .systemGreen
         case .failing: .systemRed
         case .pending: .systemYellow
         case .unknown: .tertiaryLabelColor
         }
-        let adjusted = self.isLightAppearance ? base.withAlphaComponent(0.6) : base
+        let alpha: CGFloat = isLightAppearance ? 0.45 : 0.85
+        let adjusted = base.withAlphaComponent(alpha)
         return Color(nsColor: adjusted)
+    }
+}
+
+struct MenuStatusDot: View {
+    let status: CIStatus
+
+    var body: some View {
+        Circle()
+            .fill(MenuCIBadge.dotColor(for: self.status, isLightAppearance: self.isLightAppearance))
+            .frame(width: 6, height: 6)
     }
 
     private var isLightAppearance: Bool {
@@ -320,25 +338,46 @@ struct MenuRepoFiltersView: View {
 
             Spacer(minLength: 6)
 
-            Picker("Filter", selection: self.$session.menuRepoFilter) {
-                ForEach(MenuRepoFilter.allCases, id: \.self) { filter in
-                    Text(filter.label).tag(filter)
-                }
-            }
-            .labelsHidden()
-            .pickerStyle(.segmented)
-            .controlSize(.mini)
-            .fixedSize()
+            MenuFilterToggle(
+                title: "Issues",
+                systemImage: "exclamationmark.circle",
+                isOn: Binding(
+                    get: { self.session.menuOnlyWith.requireIssues },
+                    set: { self.session.menuOnlyWith.requireIssues = $0 }))
+
+            MenuFilterToggle(
+                title: "PRs",
+                systemImage: "arrow.triangle.branch",
+                isOn: Binding(
+                    get: { self.session.menuOnlyWith.requirePRs },
+                    set: { self.session.menuOnlyWith.requirePRs = $0 }))
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .onChange(of: self.session.menuRepoScope) { _, _ in
             NotificationCenter.default.post(name: .menuFiltersDidChange, object: nil)
         }
-        .onChange(of: self.session.menuRepoFilter) { _, _ in
-            NotificationCenter.default.post(name: .menuFiltersDidChange, object: nil)
-        }
         .onChange(of: self.session.settings.menuSortKey) { _, _ in
             NotificationCenter.default.post(name: .menuFiltersDidChange, object: nil)
         }
+        .onChange(of: self.session.menuOnlyWith) { _, _ in
+            NotificationCenter.default.post(name: .menuFiltersDidChange, object: nil)
+        }
+    }
+}
+
+struct MenuFilterToggle: View {
+    let title: String
+    let systemImage: String
+    @Binding var isOn: Bool
+
+    var body: some View {
+        Toggle(isOn: self.$isOn) {
+            Label(self.title, systemImage: self.systemImage)
+                .labelStyle(.iconOnly)
+        }
+        .toggleStyle(.button)
+        .controlSize(.mini)
+        .buttonStyle(.borderless)
+        .accessibilityLabel(self.title)
     }
 }

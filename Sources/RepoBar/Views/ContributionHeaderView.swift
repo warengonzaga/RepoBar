@@ -1,3 +1,4 @@
+import AppKit
 import RepoBarCore
 import SwiftUI
 
@@ -11,12 +12,17 @@ struct ContributionHeaderView: View {
 
     var body: some View {
         if self.session.settings.showHeatmap {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Contributions · \(self.displayName) · last \(self.session.settings.heatmapSpan.label)")
-                    .font(.caption2)
-                    .foregroundStyle(.secondary)
-                self.content
+            Button {
+                self.openProfile()
+            } label: {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Contributions · \(self.displayName) · last \(self.session.settings.heatmapSpan.label)")
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                    self.content
+                }
             }
+            .buttonStyle(.plain)
             .task(id: self.session.hasLoadedRepositories) {
                 guard self.session.hasLoadedRepositories else { return }
                 let hasHeatmap = self.session.contributionUser == self.username && !self.session.contributionHeatmap.isEmpty
@@ -74,6 +80,17 @@ struct ContributionHeaderView: View {
         }
         .font(.caption2)
         .foregroundStyle(.secondary)
+    }
+
+    private func openProfile() {
+        guard let url = profileURL else { return }
+        NSWorkspace.shared.open(url)
+    }
+
+    private var profileURL: URL? {
+        var host = self.session.settings.githubHost
+        host.appendPathComponent(self.username)
+        return host
     }
 
     private static let axisFormatter: DateFormatter = {

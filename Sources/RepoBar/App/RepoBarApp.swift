@@ -359,7 +359,7 @@ final class Session {
     var contributionUser: String?
     var contributionError: String?
     var menuRepoScope: MenuRepoScope = .all
-    var menuRepoFilter: MenuRepoFilter = .all
+    var menuOnlyWith: RepositoryOnlyWith = .none
 }
 
 enum AccountState: Equatable {
