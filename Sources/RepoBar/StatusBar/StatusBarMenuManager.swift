@@ -144,6 +144,7 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
     }
 
     func menuWillOpen(_ menu: NSMenu) {
+        menu.appearance = NSApp.effectiveAppearance
         if menu === self.mainMenu {
             self.populateMainMenu(menu)
             self.refreshMenuViewHeights(in: menu)
@@ -250,35 +251,18 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
                 .padding(.vertical, 8)
             menu.addItem(self.viewItem(for: emptyState, enabled: false))
         } else {
-            for (index, repo) in repos.enumerated() {
+            for repo in repos {
                 let isPinned = settings.pinnedRepositories.contains(repo.title)
                 let card = RepoMenuCardView(
                     repo: repo,
                     isPinned: isPinned,
-                    isHighlighted: false,
-                    showsSubmenuIndicator: true,
-                    showsSeparator: index < repos.count - 1,
                     showHeatmap: settings.showHeatmap,
                     heatmapSpan: settings.heatmapSpan,
                     accentTone: settings.accentTone
                 )
-
-                let item = self.viewItem(for: card, enabled: true, highlightable: true) { highlighted in
-                    AnyView(
-                        RepoMenuCardView(
-                            repo: repo,
-                            isPinned: isPinned,
-                            isHighlighted: highlighted,
-                            showsSubmenuIndicator: true,
-                            showsSeparator: index < repos.count - 1,
-                            showHeatmap: settings.showHeatmap,
-                            heatmapSpan: settings.heatmapSpan,
-                            accentTone: settings.accentTone
-                        )
-                    )
-                }
+                let submenu = self.makeRepoSubmenu(for: repo, isPinned: isPinned)
+                let item = self.viewItem(for: card, enabled: true, highlightable: true, submenu: submenu)
                 item.representedObject = repo.title
-                item.submenu = self.makeRepoSubmenu(for: repo, isPinned: isPinned)
                 menu.addItem(item)
             }
         }
@@ -373,14 +357,26 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
         for content: Content,
         enabled: Bool,
         highlightable: Bool = false,
-        highlightContent: ((Bool) -> AnyView)? = nil
+        submenu: NSMenu? = nil
     ) -> NSMenuItem {
         let item = NSMenuItem()
         item.isEnabled = enabled
-        if highlightable, let highlightContent {
-            item.view = MenuItemHostingView(makeContent: highlightContent)
+        if highlightable {
+            let highlightState = MenuItemHighlightState()
+            let wrapped = MenuItemContainerView(
+                highlightState: highlightState,
+                showsSubmenuIndicator: submenu != nil
+            ) {
+                content
+            }
+            item.view = MenuItemHostingView(rootView: AnyView(wrapped), highlightState: highlightState)
         } else {
-            item.view = MenuItemHostingView(makeContent: { _ in AnyView(content) })
+            item.view = MenuItemHostingView(rootView: AnyView(content))
+        }
+        item.submenu = submenu
+        if submenu != nil {
+            item.target = self
+            item.action = #selector(self.menuItemNoOp(_:))
         }
         return item
     }
@@ -459,6 +455,8 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
     private func open(url: URL) {
         NSWorkspace.shared.open(url)
     }
+
+    @objc private func menuItemNoOp(_: NSMenuItem) {}
 }
 
 @MainActor
@@ -472,9 +470,53 @@ private protocol MenuItemHighlighting: AnyObject {
 }
 
 @MainActor
+private final class MenuItemHighlightState: ObservableObject {
+    @Published var isHighlighted = false
+}
+
+private struct MenuItemContainerView<Content: View>: View {
+    @ObservedObject var highlightState: MenuItemHighlightState
+    let showsSubmenuIndicator: Bool
+    let content: Content
+
+    init(
+        highlightState: MenuItemHighlightState,
+        showsSubmenuIndicator: Bool,
+        @ViewBuilder content: () -> Content
+    ) {
+        self.highlightState = highlightState
+        self.showsSubmenuIndicator = showsSubmenuIndicator
+        self.content = content()
+    }
+
+    var body: some View {
+        self.content
+            .frame(maxWidth: .infinity, alignment: .leading)
+            .environment(\.menuItemHighlighted, self.highlightState.isHighlighted)
+            .foregroundStyle(MenuHighlightStyle.primary(self.highlightState.isHighlighted))
+            .background(alignment: .topLeading) {
+                if self.highlightState.isHighlighted {
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(MenuHighlightStyle.selectionBackground(true))
+                        .padding(.horizontal, 6)
+                        .padding(.vertical, 2)
+                }
+            }
+            .overlay(alignment: .topTrailing) {
+                if self.showsSubmenuIndicator {
+                    Image(systemName: "chevron.right")
+                        .font(.caption2.weight(.semibold))
+                        .foregroundStyle(MenuHighlightStyle.secondary(self.highlightState.isHighlighted))
+                        .padding(.top, 8)
+                        .padding(.trailing, 10)
+                }
+            }
+    }
+}
+
+@MainActor
 private final class MenuItemHostingView: NSHostingView<AnyView>, MenuItemMeasuring, MenuItemHighlighting {
-    private let makeContent: (Bool) -> AnyView
-    private var isHighlighted = false
+    private let highlightState: MenuItemHighlightState?
 
     override var allowsVibrancy: Bool { true }
 
@@ -484,14 +526,14 @@ private final class MenuItemHostingView: NSHostingView<AnyView>, MenuItemMeasuri
         return NSSize(width: self.frame.width, height: size.height)
     }
 
-    init(makeContent: @escaping (Bool) -> AnyView) {
-        self.makeContent = makeContent
-        super.init(rootView: makeContent(false))
+    init(rootView: AnyView, highlightState: MenuItemHighlightState) {
+        self.highlightState = highlightState
+        super.init(rootView: rootView)
     }
 
-    @available(*, unavailable)
+    @MainActor
     required init(rootView: AnyView) {
-        self.makeContent = { _ in rootView }
+        self.highlightState = nil
         super.init(rootView: rootView)
     }
 
@@ -501,14 +543,14 @@ private final class MenuItemHostingView: NSHostingView<AnyView>, MenuItemMeasuri
     }
 
     func measuredHeight(width: CGFloat) -> CGFloat {
-        let controller = NSHostingController(rootView: self.makeContent(self.isHighlighted))
+        let controller = NSHostingController(rootView: self.rootView)
         let measured = controller.sizeThatFits(in: CGSize(width: width, height: .greatestFiniteMagnitude))
         return measured.height
     }
 
     func setHighlighted(_ highlighted: Bool) {
-        guard highlighted != self.isHighlighted else { return }
-        self.isHighlighted = highlighted
-        self.rootView = self.makeContent(highlighted)
+        guard let highlightState else { return }
+        guard highlighted != highlightState.isHighlighted else { return }
+        highlightState.isHighlighted = highlighted
     }
 }
