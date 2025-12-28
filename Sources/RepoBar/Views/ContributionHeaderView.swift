@@ -9,6 +9,7 @@ struct ContributionHeaderView: View {
     let appState: AppState
     @State private var isLoading: Bool
     @State private var failed: Bool
+    @Environment(\.menuItemHighlighted) private var isHighlighted
 
     init(
         username: String,
@@ -33,9 +34,11 @@ struct ContributionHeaderView: View {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Contributions · \(self.displayName) · last \(self.session.settings.heatmapSpan.label)")
                         .font(.caption2)
-                        .foregroundStyle(.secondary)
+                        .foregroundStyle(MenuHighlightStyle.secondary(self.isHighlighted))
                     self.content
                 }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
             .task(id: self.session.hasLoadedRepositories) {
@@ -65,7 +68,7 @@ struct ContributionHeaderView: View {
             VStack(spacing: 6) {
                 Text(self.session.contributionError ?? "Unable to load contributions right now.")
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(MenuHighlightStyle.secondary(self.isHighlighted))
                     .multilineTextAlignment(.center)
                 Button("Retry") {
                     self.appState.clearContributionCache()
@@ -94,7 +97,7 @@ struct ContributionHeaderView: View {
             Text(Self.axisFormatter.string(from: now))
         }
         .font(.caption2)
-        .foregroundStyle(.secondary)
+        .foregroundStyle(MenuHighlightStyle.secondary(self.isHighlighted))
     }
 
     private func openProfile() {

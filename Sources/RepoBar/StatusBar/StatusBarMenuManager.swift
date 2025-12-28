@@ -208,7 +208,7 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
                 .padding(.horizontal, 10)
                 .padding(.top, 10)
                 .padding(.bottom, 6)
-            menu.addItem(self.viewItem(for: header, enabled: true))
+            menu.addItem(self.viewItem(for: header, enabled: true, highlightable: true))
             menu.addItem(.separator())
         }
 
