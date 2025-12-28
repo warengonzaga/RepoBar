@@ -215,18 +215,19 @@ struct GeneralSettingsView: View {
     let appState: AppState
 
     var body: some View {
-        Form {
-            Section {
+        VStack(spacing: 12) {
+            Form {
+                Section {
                 Toggle("Launch at login", isOn: self.$session.settings.launchAtLogin)
                     .onChange(of: self.session.settings.launchAtLogin) { _, value in
                         LaunchAtLoginHelper.set(enabled: value)
                         self.appState.persistSettings()
                     }
-            } footer: {
+                } footer: {
                 Text("Automatically opens RepoBar when you start your Mac.")
-            }
+                }
 
-            Section {
+                Section {
                 Toggle("Show contribution header", isOn: self.$session.settings.showContributionHeader)
                     .onChange(of: self.session.settings.showContributionHeader) { _, _ in
                         self.appState.persistSettings()
@@ -240,13 +241,13 @@ struct GeneralSettingsView: View {
                         Text(span.label).tag(span)
                     }
                 }
-            } header: {
+                } header: {
                 Text("Display")
-            } footer: {
+                } footer: {
                 Text("Heatmaps show recent commit activity for each repository.")
-            }
+                }
 
-            Section {
+                Section {
                 Picker("Repositories shown", selection: self.$session.settings.repoDisplayLimit) {
                     ForEach([3, 6, 9, 12], id: \.self) { Text("\($0)").tag($0) }
                 }
@@ -268,21 +269,19 @@ struct GeneralSettingsView: View {
                         self.appState.persistSettings()
                         Task { await self.appState.refresh() }
                     }
-            } header: {
+                } header: {
                 Text("Repositories")
-            } footer: {
+                } footer: {
                 Text("Filters apply to repo lists and search.")
-            }
-
-            Section {
-                HStack {
-                    Spacer()
-                    Button("Quit RepoBar") { NSApp.terminate(nil) }
                 }
-                .listRowBackground(Color.clear)
+            }
+            .formStyle(.grouped)
+
+            HStack {
+                Spacer()
+                Button("Quit RepoBar") { NSApp.terminate(nil) }
             }
         }
-        .formStyle(.grouped)
         .padding(.horizontal, 20)
         .padding(.vertical, 16)
     }
