@@ -87,7 +87,7 @@ Last updated: 2025-12-28
 - `MenuStyle` for fonts, spacing, colors, insets.
 - Avoid scattered padding tweaks in view code.
 
-### [ ] 11) Heatmap rendering consistency
+### [x] 11) Heatmap rendering consistency
 - Single `HeatmapLayout` utility for spacing + inset rules.
 - Reuse for header, repo cards, submenu heatmaps.
 

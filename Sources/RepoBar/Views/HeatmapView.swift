@@ -4,9 +4,6 @@ import SwiftUI
 struct HeatmapView: View {
     let cells: [HeatmapCell]
     let accentTone: AccentTone
-    private let rows = 7
-    private let minColumns = 53
-    private let spacing: CGFloat = 0.5
     private let height: CGFloat?
     @Environment(\.menuItemHighlighted) private var isHighlighted
     private var summary: String {
@@ -24,19 +21,19 @@ struct HeatmapView: View {
     var body: some View {
         GeometryReader { proxy in
             let size = proxy.size
-            let cellSide = self.cellSide(for: size)
-            let columns = self.columnCount()
-            let grid = HeatmapLayout.reshape(cells: self.cells, columns: columns, rows: self.rows)
+            let cellSide = HeatmapLayout.cellSide(for: size.height)
+            let columns = HeatmapLayout.columnCount(cellCount: self.cells.count)
+            let grid = HeatmapLayout.reshape(cells: self.cells, columns: columns)
             let xOffset: CGFloat = 0
             Canvas { context, _ in
                 for (x, column) in grid.enumerated() {
                     for (y, cell) in column.enumerated() {
                         let origin = CGPoint(
-                            x: xOffset + CGFloat(x) * (cellSide + self.spacing),
-                            y: CGFloat(y) * (cellSide + self.spacing)
+                            x: xOffset + CGFloat(x) * (cellSide + HeatmapLayout.spacing),
+                            y: CGFloat(y) * (cellSide + HeatmapLayout.spacing)
                         )
                         let rect = CGRect(origin: origin, size: CGSize(width: cellSide, height: cellSide))
-                        let path = Path(roundedRect: rect, cornerRadius: cellSide * 0.12)
+                        let path = Path(roundedRect: rect, cornerRadius: cellSide * HeatmapLayout.cornerRadiusFactor)
                         context.fill(path, with: .color(self.color(for: cell.count)))
                     }
                 }
@@ -91,21 +88,29 @@ struct HeatmapView: View {
         }
     }
 
-    private func columnCount() -> Int {
-        let dataColumns = max(1, Int(ceil(Double(self.cells.count) / Double(self.rows))))
-        return max(dataColumns, self.minColumns)
-    }
-
-    private func cellSide(for size: CGSize) -> CGFloat {
-        let totalSpacingY = CGFloat(self.rows - 1) * self.spacing
-        let availableHeight = max(size.height - totalSpacingY, 0)
-        let side = availableHeight / CGFloat(self.rows)
-        return max(2, min(10, floor(side)))
-    }
 }
 
 enum HeatmapLayout {
-    static func reshape(cells: [HeatmapCell], columns: Int, rows: Int) -> [[HeatmapCell]] {
+    static let rows = 7
+    static let minColumns = 53
+    static let spacing: CGFloat = 0.5
+    static let cornerRadiusFactor: CGFloat = 0.12
+    static let minCellSide: CGFloat = 2
+    static let maxCellSide: CGFloat = 10
+
+    static func columnCount(cellCount: Int) -> Int {
+        let dataColumns = max(1, Int(ceil(Double(cellCount) / Double(rows))))
+        return max(dataColumns, minColumns)
+    }
+
+    static func cellSide(for height: CGFloat) -> CGFloat {
+        let totalSpacingY = CGFloat(rows - 1) * spacing
+        let availableHeight = max(height - totalSpacingY, 0)
+        let side = availableHeight / CGFloat(rows)
+        return max(minCellSide, min(maxCellSide, floor(side)))
+    }
+
+    static func reshape(cells: [HeatmapCell], columns: Int) -> [[HeatmapCell]] {
         var padded = cells
         if padded.count < columns * rows {
             let missing = columns * rows - padded.count
