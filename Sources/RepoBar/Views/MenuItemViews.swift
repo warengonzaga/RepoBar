@@ -53,6 +53,9 @@ struct RepoMenuCardView: View {
         HStack(alignment: .top, spacing: 8) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) {
+                    Circle()
+                        .fill(MenuCIBadge.dotColor(for: self.repo.ciStatus, isLightAppearance: self.isLightAppearance))
+                        .frame(width: 6, height: 6)
                     Text(self.repo.title)
                         .font(.subheadline)
                         .fontWeight(.regular)
@@ -77,7 +80,6 @@ struct RepoMenuCardView: View {
     @ViewBuilder
     private var stats: some View {
         HStack(spacing: 12) {
-            MenuCIBadge(status: self.repo.ciStatus, runCount: nil)
             MenuStatBadge(label: "Issues", value: self.repo.issues)
             MenuStatBadge(label: "PRs", value: self.repo.pulls)
         }
@@ -124,6 +126,10 @@ struct RepoMenuCardView: View {
     }
 
     private var verticalSpacing: CGFloat { 4 }
+
+    private var isLightAppearance: Bool {
+        NSApp.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .aqua
+    }
 }
 
 struct MenuStatBadge: View {
@@ -158,8 +164,6 @@ struct MenuCIBadge: View {
             Circle()
                 .fill(self.color)
                 .frame(width: 6, height: 6)
-            Text("CI")
-                .font(.caption2)
             if let runCount {
                 Text("\(runCount)")
                     .font(.caption2).bold()
