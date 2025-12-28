@@ -425,9 +425,9 @@ struct MenuRepoFiltersView: View {
                 }
             }
             .labelsHidden()
-            .font(.caption2)
+            .font(.subheadline)
             .pickerStyle(.segmented)
-            .controlSize(.mini)
+            .controlSize(.small)
             .fixedSize()
 
             Spacer(minLength: 2)
@@ -440,12 +440,13 @@ struct MenuRepoFiltersView: View {
                 }
             }
             .labelsHidden()
-            .font(.caption2)
+            .font(.subheadline)
             .pickerStyle(.segmented)
-            .controlSize(.mini)
+            .controlSize(.small)
             .fixedSize()
         }
-        .padding(.horizontal, 10)
+        .padding(.horizontal, 12)
+        .padding(.vertical, 3)
         .frame(maxWidth: .infinity, alignment: .leading)
         .onChange(of: self.session.settings.menuSortKey) { _, _ in
             NotificationCenter.default.post(name: .menuFiltersDidChange, object: nil)
