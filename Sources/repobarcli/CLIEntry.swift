@@ -47,6 +47,9 @@ enum RepoBarCLI {
 
     private static let commandRegistry: [String: CommanderRunnableCommand.Type] = [
         ReposCommand.commandName: ReposCommand.self,
+        RepoCommand.commandName: RepoCommand.self,
+        RefreshCommand.commandName: RefreshCommand.self,
+        ContributionsCommand.commandName: ContributionsCommand.self,
         LoginCommand.commandName: LoginCommand.self,
         LogoutCommand.commandName: LogoutCommand.self,
         StatusCommand.commandName: StatusCommand.self

@@ -12,6 +12,9 @@ struct RepoBarRoot: ParsableCommand {
             abstract: "RepoBar CLI",
             subcommands: [
                 ReposCommand.self,
+                RepoCommand.self,
+                RefreshCommand.self,
+                ContributionsCommand.self,
                 LoginCommand.self,
                 LogoutCommand.self,
                 StatusCommand.self
@@ -43,6 +46,9 @@ struct ReposCommand: CommanderRunnableCommand {
     @Flag(names: [.customLong("archived"), .customLong("include-archived")], help: "Include archived repositories (hidden by default)")
     var includeArchived: Bool = false
 
+    @Flag(names: [.customLong("pinned-only")], help: "Only list pinned repositories from settings")
+    var pinnedOnly: Bool = false
+
     @Option(name: .customLong("only-with"), help: "Only show repos that have issues and/or PRs (values: work, issues, prs)")
     var onlyWith: OnlyWithSelection?
 
@@ -68,6 +74,7 @@ struct ReposCommand: CommanderRunnableCommand {
         self.includeEvent = values.flag("includeEvent")
         self.includeForks = values.flag("includeForks")
         self.includeArchived = values.flag("includeArchived")
+        self.pinnedOnly = values.flag("pinnedOnly")
         self.onlyWith = try values.decodeOption("onlyWith")
     }
 
@@ -101,8 +108,38 @@ struct ReposCommand: CommanderRunnableCommand {
             try await OAuthTokenRefresher().refreshIfNeeded(host: host)
         }
 
-        let repos = try await client.activityRepositories(limit: limit)
         let now = Date()
+        let baseHost = settings.enterpriseHost ?? settings.githubHost
+
+        if self.pinnedOnly {
+            let hidden = Set(settings.hiddenRepositories)
+            let pinned = settings.pinnedRepositories.filter { !hidden.contains($0) }
+            guard pinned.isEmpty == false else {
+                if self.output.jsonOutput {
+                    try renderJSON([], baseHost: baseHost)
+                } else {
+                    print("No pinned repositories to show.")
+                }
+                return
+            }
+            let repos = try await self.fetchPinnedRepositories(pinned, client: client)
+            let rows = prepareRows(repos: repos, now: now)
+            if self.output.jsonOutput {
+                try renderJSON(rows, baseHost: baseHost)
+            } else {
+                renderTable(
+                    rows,
+                    useColor: self.output.useColor,
+                    includeURL: self.output.plain == false,
+                    includeRelease: self.includeRelease,
+                    includeEvent: self.includeEvent,
+                    baseHost: baseHost
+                )
+            }
+            return
+        }
+
+        let repos = try await client.activityRepositories(limit: limit)
         let cutoff = Calendar.current.date(byAdding: .day, value: -self.age, to: now)
         let filtered = repos.filter { repo in
             guard let cutoff else { return false }
@@ -120,8 +157,6 @@ struct ReposCommand: CommanderRunnableCommand {
             sorted = try await self.attachLatestReleases(to: sorted, client: client)
         }
         let rows = prepareRows(repos: sorted, now: now)
-
-        let baseHost = settings.enterpriseHost ?? settings.githubHost
 
         if self.output.jsonOutput {
             try renderJSON(rows, baseHost: baseHost)
@@ -157,6 +192,28 @@ struct ReposCommand: CommanderRunnableCommand {
             }
 
             var results: [Repository?] = Array(repeating: nil, count: repos.count)
+            for try await (index, repo) in group {
+                results[index] = repo
+            }
+            return results.compactMap(\.self)
+        }
+    }
+
+    private func fetchPinnedRepositories(_ pinned: [String], client: GitHubClient) async throws -> [Repository] {
+        let targets: [(Int, String, String)] = pinned.enumerated().compactMap { index, name in
+            let parts = name.split(separator: "/", maxSplits: 1).map(String.init)
+            guard parts.count == 2 else { return nil }
+            return (index, parts[0], parts[1])
+        }
+        return try await withThrowingTaskGroup(of: (Int, Repository).self) { group in
+            for (index, owner, name) in targets {
+                group.addTask {
+                    let repo = try await client.fullRepository(owner: owner, name: name)
+                    return (index, repo.withOrder(index))
+                }
+            }
+
+            var results: [Repository?] = Array(repeating: nil, count: pinned.count)
             for try await (index, repo) in group {
                 results[index] = repo
             }

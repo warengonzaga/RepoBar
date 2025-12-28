@@ -185,6 +185,9 @@ func parseHost(_ raw: String) throws -> URL {
 enum HelpTarget: String {
     case root
     case repos
+    case repo
+    case refresh
+    case contributions
     case login
     case logout
     case status
@@ -207,6 +210,12 @@ enum HelpTarget: String {
         switch token {
         case ReposCommand.commandName:
             return .repos
+        case RepoCommand.commandName:
+            return .repo
+        case RefreshCommand.commandName:
+            return .refresh
+        case ContributionsCommand.commandName:
+            return .contributions
         case LoginCommand.commandName:
             return .login
         case LogoutCommand.commandName:
@@ -226,7 +235,10 @@ func printHelp(_ target: HelpTarget) {
         repobarcli - list repositories by activity, issues, PRs, stars
 
         Usage:
-          repobarcli [repos] [--limit N] [--age DAYS] [--release] [--event] [--forks] [--archived] [--only-with VAL] [--json] [--plain] [--sort KEY]
+          repobarcli [repos] [--limit N] [--age DAYS] [--release] [--event] [--forks] [--archived] [--pinned-only] [--only-with VAL] [--json] [--plain] [--sort KEY]
+          repobarcli repo <owner/name> [--traffic] [--heatmap] [--release] [--json] [--plain]
+          repobarcli refresh [--json] [--plain]
+          repobarcli contributions [--login USER] [--json] [--plain]
           repobarcli login [--host URL] [--client-id ID] [--client-secret SECRET] [--loopback-port PORT]
           repobarcli logout
           repobarcli status [--json]
@@ -238,6 +250,7 @@ func printHelp(_ target: HelpTarget) {
           --event      Show activity event column (hidden by default)
           --forks      Include forked repositories (hidden by default)
           --archived   Include archived repositories (hidden by default)
+          --pinned-only  Only list pinned repositories from settings
           --only-with  Only show repos that have issues and/or PRs (values: work, issues, prs)
           --json       Output JSON instead of formatted table
           --plain      Plain table output (no links, no colors, no URLs)
@@ -250,7 +263,7 @@ func printHelp(_ target: HelpTarget) {
         repobarcli repos - list repositories
 
         Usage:
-          repobarcli repos [--limit N] [--age DAYS] [--release] [--event] [--forks] [--archived] [--only-with VAL] [--json] [--plain] [--sort KEY]
+          repobarcli repos [--limit N] [--age DAYS] [--release] [--event] [--forks] [--archived] [--pinned-only] [--only-with VAL] [--json] [--plain] [--sort KEY]
 
         Options:
           --limit N    Max repositories to fetch (default: all accessible)
@@ -259,11 +272,52 @@ func printHelp(_ target: HelpTarget) {
           --event      Show activity event column (hidden by default)
           --forks      Include forked repositories (hidden by default)
           --archived   Include archived repositories (hidden by default)
+          --pinned-only  Only list pinned repositories from settings
           --only-with  Only show repos that have issues and/or PRs (values: work, issues, prs)
           --json       Output JSON instead of formatted table
           --plain      Plain table output (no links, no colors, no URLs)
           --sort KEY   Sort by activity, issues, prs, stars, repo, or event
           --no-color   Disable color output
+        """
+    case .repo:
+        """
+        repobarcli repo - fetch a repository summary
+
+        Usage:
+          repobarcli repo <owner/name> [--traffic] [--heatmap] [--release] [--json] [--plain]
+
+        Options:
+          --traffic   Include traffic stats
+          --heatmap   Include commit activity heatmap
+          --release   Include latest release data
+          --json      Output JSON instead of formatted text
+          --plain     Plain output (no links, no colors)
+          --no-color  Disable color output
+        """
+    case .refresh:
+        """
+        repobarcli refresh - refresh pinned repositories
+
+        Usage:
+          repobarcli refresh [--json] [--plain]
+
+        Options:
+          --json      Output JSON instead of formatted text
+          --plain     Plain output (no links, no colors)
+          --no-color  Disable color output
+        """
+    case .contributions:
+        """
+        repobarcli contributions - fetch contribution heatmap
+
+        Usage:
+          repobarcli contributions [--login USER] [--json] [--plain]
+
+        Options:
+          --login USER  GitHub login (defaults to current user)
+          --json        Output JSON instead of formatted text
+          --plain       Plain output (no links, no colors)
+          --no-color    Disable color output
         """
     case .login:
         """
