@@ -9,7 +9,8 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
 
     private let appState: AppState
     private var mainMenu: NSMenu?
-    private var addRepoWindowController: AddRepoWindowController?
+    private var lastMenuRefresh: Date?
+    private let menuRefreshInterval: TimeInterval = 30
 
     init(appState: AppState) {
         self.appState = appState
@@ -45,13 +46,6 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
 
     @objc private func quitApp() {
         NSApp.terminate(nil)
-    }
-
-    @objc private func openAddRepo() {
-        if self.addRepoWindowController == nil {
-            self.addRepoWindowController = AddRepoWindowController(appState: self.appState)
-        }
-        self.addRepoWindowController?.show()
     }
 
     @objc private func signIn() {
@@ -146,6 +140,7 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
     func menuWillOpen(_ menu: NSMenu) {
         menu.appearance = NSApp.effectiveAppearance
         if menu === self.mainMenu {
+            self.refreshIfNeededOnOpen()
             self.populateMainMenu(menu)
             self.refreshMenuViewHeights(in: menu)
         }
@@ -240,10 +235,6 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
             menu.addItem(.separator())
         }
 
-        menu.addItem(self.sectionHeaderItem(title: "Repositories"))
-        menu.addItem(self.actionItem(title: "Add Repository…", action: #selector(self.openAddRepo)))
-        menu.addItem(.separator())
-
         let repos = self.orderedViewModels()
         if repos.isEmpty {
             let emptyState = MenuEmptyStateView()
@@ -269,19 +260,10 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
         }
 
         menu.addItem(.separator())
-        menu.addItem(self.actionItem(title: "Refresh now", action: #selector(self.refreshNow), keyEquivalent: "r"))
         menu.addItem(self.actionItem(title: "Preferences…", action: #selector(self.openPreferences), keyEquivalent: ","))
         menu.addItem(self.actionItem(title: "Check for Updates…", action: #selector(self.checkForUpdates)))
         menu.addItem(.separator())
         menu.addItem(self.actionItem(title: "Quit RepoBar", action: #selector(self.quitApp), keyEquivalent: "q"))
-    }
-
-    private func sectionHeaderItem(title: String) -> NSMenuItem {
-        let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
-        item.isEnabled = false
-        let font = NSFont.systemFont(ofSize: NSFont.systemFontSize, weight: .semibold)
-        item.attributedTitle = NSAttributedString(string: title, attributes: [.font: font])
-        return item
     }
 
     private func accountStateItem() -> NSMenuItem {
@@ -384,17 +366,6 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
             }
         }
 
-        menu.addItem(.separator())
-        menu.addItem(self.actionItem(
-            title: "Copy Repository Name",
-            action: #selector(self.copyRepoName),
-            represented: repo.title,
-            systemImage: "doc.on.doc"))
-        menu.addItem(self.actionItem(
-            title: "Copy Repository URL",
-            action: #selector(self.copyRepoURL),
-            represented: repo.title,
-            systemImage: "link"))
         return menu
     }
 
@@ -520,6 +491,15 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
     }
 
     @objc private func menuItemNoOp(_: NSMenuItem) {}
+
+    private func refreshIfNeededOnOpen() {
+        let now = Date()
+        if let lastMenuRefresh, now.timeIntervalSince(lastMenuRefresh) < self.menuRefreshInterval {
+            return
+        }
+        self.lastMenuRefresh = now
+        self.refreshNow()
+    }
 }
 
 @MainActor

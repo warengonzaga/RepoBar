@@ -11,6 +11,9 @@ struct ContributionHeaderView: View {
     var body: some View {
         if self.session.settings.showHeatmap {
             VStack(alignment: .leading, spacing: 4) {
+                Text("Contributions · last \(self.session.settings.heatmapSpan.label)")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
                 self.content
             }
             .task(id: self.session.hasLoadedRepositories) {
