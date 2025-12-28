@@ -3,7 +3,10 @@ import AppKit
 @MainActor
 enum AppActions {
     static func openSettings() {
-        SettingsWindowController.shared.show()
+        NSApp.activate(ignoringOtherApps: true)
+        if !NSApp.sendAction(Selector(("showSettingsWindow:")), to: nil, from: nil) {
+            _ = NSApp.sendAction(Selector(("showPreferencesWindow:")), to: nil, from: nil)
+        }
     }
 
     static func openAbout() {
