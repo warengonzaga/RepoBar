@@ -284,7 +284,7 @@ struct MenuRepoFiltersView: View {
             }
             .labelsHidden()
             .pickerStyle(.segmented)
-            .controlSize(.small)
+            .controlSize(.mini)
 
             Picker("Filter", selection: self.$session.menuRepoFilter) {
                 ForEach(MenuRepoFilter.allCases, id: \.self) { filter in
@@ -293,7 +293,7 @@ struct MenuRepoFiltersView: View {
             }
             .labelsHidden()
             .pickerStyle(.segmented)
-            .controlSize(.small)
+            .controlSize(.mini)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }

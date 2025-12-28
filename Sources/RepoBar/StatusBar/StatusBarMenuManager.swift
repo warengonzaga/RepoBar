@@ -266,7 +266,7 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
         menu.addItem(.separator())
         menu.addItem(self.actionItem(title: "Preferences…", action: #selector(self.openPreferences), keyEquivalent: ","))
         if SparkleController.shared.updateStatus.isUpdateReady {
-            menu.addItem(self.actionItem(title: "Update ready, restart now?", action: #selector(self.checkForUpdates)))
+            menu.addItem(self.actionItem(title: "Restart to update", action: #selector(self.checkForUpdates)))
         }
         menu.addItem(.separator())
         menu.addItem(self.actionItem(title: "Quit RepoBar", action: #selector(self.quitApp), keyEquivalent: "q"))

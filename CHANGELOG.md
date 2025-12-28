@@ -26,6 +26,7 @@
 - Token refresh now preserves OAuth client credentials and shows a clearer error when refresh fails.
 - Menubar repository rows now use tighter, more native spacing with submenu indicators and icons.
 - Menubar heatmaps adapt width to the visible span and use a muted palette on highlight.
+- Menu filters use compact segmented controls and the update prompt is labeled “Restart to update”.
 
 ### Fixed
 - mac app no longer crashes on launch due to the hidden keepalive window; Settings opens via AppKit action.
