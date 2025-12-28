@@ -7,8 +7,23 @@ struct ContributionHeaderView: View {
     let displayName: String
     @Bindable var session: Session
     let appState: AppState
-    @State private var isLoading = true
-    @State private var failed = false
+    @State private var isLoading: Bool
+    @State private var failed: Bool
+
+    init(
+        username: String,
+        displayName: String,
+        session: Session,
+        appState: AppState
+    ) {
+        self.username = username
+        self.displayName = displayName
+        self.session = session
+        self.appState = appState
+        let hasHeatmap = session.contributionUser == username && !session.contributionHeatmap.isEmpty
+        _isLoading = State(initialValue: !hasHeatmap)
+        _failed = State(initialValue: false)
+    }
 
     var body: some View {
         if self.session.settings.showHeatmap {
