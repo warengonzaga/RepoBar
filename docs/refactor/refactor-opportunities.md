@@ -47,7 +47,7 @@ Last updated: 2025-12-28
 - Introduce `MenuSection` definitions (header, filters, repo list, footer).
 - Centralize submenu structure and ordering rules.
 
-### [ ] 4) Repository view models
+### [x] 4) Repository view models
 - Introduce `RepositoryDisplayModel` with precomputed strings, ages, labels.
 - Keep logic out of SwiftUI views.
 - Compute `activityLine`, `statsLine`, `releaseLine` once.

@@ -136,7 +136,7 @@ final class StatusBarMenuBuilder {
         menu.addItem(self.actionItem(title: "Quit RepoBar", action: #selector(self.target.quitApp), keyEquivalent: "q"))
     }
 
-    func makeRepoSubmenu(for repo: RepositoryViewModel, isPinned: Bool) -> NSMenu {
+    func makeRepoSubmenu(for repo: RepositoryDisplayModel, isPinned: Bool) -> NSMenu {
         let menu = NSMenu()
         menu.autoenablesItems = false
         menu.delegate = target
@@ -276,7 +276,7 @@ final class StatusBarMenuBuilder {
         Self.menuFixedWidth
     }
 
-    private func repoDetailItems(for repo: RepositoryViewModel) -> [NSMenuItem] {
+    private func repoDetailItems(for repo: RepositoryDisplayModel) -> [NSMenuItem] {
         var items: [NSMenuItem] = []
         if let runCount = repo.ciRunCount {
             items.append(self.infoItem("CI runs: \(runCount)"))
@@ -294,7 +294,7 @@ final class StatusBarMenuBuilder {
         self.viewItem(for: MenuPaddedSeparatorView(), enabled: false)
     }
 
-    private func repoActivityItems(for repo: RepositoryViewModel) -> [NSMenuItem] {
+    private func repoActivityItems(for repo: RepositoryDisplayModel) -> [NSMenuItem] {
         repo.activityEvents.prefix(10).map { event in
             let view = ActivityMenuItemView(
                 event: event,
@@ -388,7 +388,7 @@ final class StatusBarMenuBuilder {
         return item
     }
 
-    private func orderedViewModels() -> [RepositoryViewModel] {
+    private func orderedViewModels() -> [RepositoryDisplayModel] {
         let session = self.appState.session
         let selection = session.menuRepoSelection
         let settings = session.settings
@@ -405,7 +405,7 @@ final class StatusBarMenuBuilder {
             pinPriority: true
         )
         let sorted = RepositoryPipeline.apply(session.repositories, query: query)
-        return sorted.map { RepositoryViewModel(repo: $0) }
+        return sorted.map { RepositoryDisplayModel(repo: $0) }
     }
 
     private func emptyStateMessage(for session: Session) -> (String, String) {

@@ -1,17 +1,24 @@
 import Foundation
 import RepoBarCore
 
-struct RepositoryViewModel: Identifiable, Equatable {
+struct RepositoryDisplayModel: Identifiable, Equatable {
+    struct Stat: Identifiable, Equatable {
+        let id: String
+        let label: String?
+        let value: Int
+        let systemImage: String
+    }
+
     let source: Repository
     let id: String
     let title: String
-    let latestRelease: String?
-    let latestReleaseDate: String?
+    let releaseLine: String?
     let lastPushAge: String?
     let ciStatus: CIStatus
     let ciRunCount: Int?
     let issues: Int
     let pulls: Int
+    let stats: [Stat]
     let trafficVisitors: Int?
     let trafficCloners: Int?
     let stars: Int
@@ -43,11 +50,10 @@ struct RepositoryViewModel: Identifiable, Equatable {
         self.rateLimitedUntil = repo.rateLimitedUntil
 
         if let release = repo.latestRelease {
-            self.latestRelease = release.name
-            self.latestReleaseDate = RelativeFormatter.string(from: release.publishedAt, relativeTo: now)
+            let date = RelativeFormatter.string(from: release.publishedAt, relativeTo: now)
+            self.releaseLine = "\(release.name) • \(date)"
         } else {
-            self.latestRelease = nil
-            self.latestReleaseDate = nil
+            self.releaseLine = nil
         }
 
         if let pushedAt = repo.pushedAt {
@@ -68,5 +74,12 @@ struct RepositoryViewModel: Identifiable, Equatable {
         } else {
             self.latestActivityAge = nil
         }
+
+        self.stats = [
+            Stat(id: "issues", label: "Issues", value: repo.openIssues, systemImage: "exclamationmark.circle"),
+            Stat(id: "prs", label: "PRs", value: repo.openPulls, systemImage: "arrow.triangle.branch"),
+            Stat(id: "stars", label: nil, value: repo.stars, systemImage: "star"),
+            Stat(id: "forks", label: "Forks", value: repo.forks, systemImage: "tuningfork"),
+        ]
     }
 }

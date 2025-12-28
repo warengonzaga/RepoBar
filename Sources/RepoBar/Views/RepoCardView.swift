@@ -3,7 +3,7 @@ import SwiftUI
 import AppKit
 
 struct RepoCardView: View {
-    let repo: RepositoryViewModel
+    let repo: RepositoryDisplayModel
     let isPinned: Bool
     let unpin: () -> Void
     let hide: () -> Void
@@ -49,7 +49,7 @@ struct RepoCardView: View {
         parts.append("CI \(self.repo.ciStatus)")
         parts.append("Issues \(self.repo.issues)")
         parts.append("Pull requests \(self.repo.pulls)")
-        if let release = self.repo.latestReleaseDate {
+        if let release = self.repo.releaseLine {
             parts.append("Release \(release)")
         }
         if let activity = self.repo.activityLine {
@@ -65,9 +65,8 @@ struct RepoCardView: View {
                 Text(self.repo.title)
                     .font(.headline)
                     .lineLimit(1)
-                if let release = repo.latestRelease {
-                    let date = self.repo.latestReleaseDate ?? ""
-                    Text(date.isEmpty ? release : "\(release) • \(date)")
+                if let releaseLine = repo.releaseLine {
+                    Text(releaseLine)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                 }

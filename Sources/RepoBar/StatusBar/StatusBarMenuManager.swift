@@ -193,10 +193,10 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
 
     // MARK: - Main menu
 
-    private func repoModel(from sender: NSMenuItem) -> RepositoryViewModel? {
+    private func repoModel(from sender: NSMenuItem) -> RepositoryDisplayModel? {
         guard let fullName = self.repoFullName(from: sender) else { return nil }
         guard let repo = self.appState.session.repositories.first(where: { $0.fullName == fullName }) else { return nil }
-        return RepositoryViewModel(repo: repo)
+        return RepositoryDisplayModel(repo: repo)
     }
 
     private func repoFullName(from sender: NSMenuItem) -> String? {

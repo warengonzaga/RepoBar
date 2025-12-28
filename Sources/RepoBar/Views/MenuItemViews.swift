@@ -15,7 +15,7 @@ extension EnvironmentValues {
 }
 
 struct RepoMenuCardView: View {
-    let repo: RepositoryViewModel
+    let repo: RepositoryDisplayModel
     let isPinned: Bool
     let showsSeparator: Bool
     let showHeatmap: Bool
@@ -71,9 +71,8 @@ struct RepoMenuCardView: View {
                 }
             }
             Spacer(minLength: 6)
-            if let release = repo.latestRelease {
-                let date = self.repo.latestReleaseDate ?? ""
-                Text(date.isEmpty ? release : "\(release) • \(date)")
+            if let releaseLine = repo.releaseLine {
+                Text(releaseLine)
                     .font(.system(size: 10))
                     .foregroundStyle(MenuHighlightStyle.secondary(self.isHighlighted))
                     .lineLimit(1)
@@ -85,10 +84,9 @@ struct RepoMenuCardView: View {
     @ViewBuilder
     private var stats: some View {
         HStack(spacing: 12) {
-            MenuStatBadge(label: "Issues", value: self.repo.issues, systemImage: "exclamationmark.circle")
-            MenuStatBadge(label: "PRs", value: self.repo.pulls, systemImage: "arrow.triangle.branch")
-            MenuStatBadge(label: "Stars", value: self.repo.stars, systemImage: "star")
-            MenuStatBadge(label: "Forks", value: self.repo.forks, systemImage: "tuningfork")
+            ForEach(self.repo.stats) { stat in
+                MenuStatBadge(label: stat.label, value: stat.value, systemImage: stat.systemImage)
+            }
         }
     }
 
