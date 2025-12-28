@@ -244,6 +244,7 @@ final class AppState: ObservableObject {
             await MainActor.run {
                 self.session.contributionUser = username
                 self.session.contributionHeatmap = cached.cells
+                self.session.contributionError = nil
             }
             return
         }
@@ -252,6 +253,7 @@ final class AppState: ObservableObject {
             await MainActor.run {
                 self.session.contributionUser = username
                 self.session.contributionHeatmap = cells
+                self.session.contributionError = nil
             }
             let cache = ContributionCache(
                 username: username,
@@ -263,6 +265,7 @@ final class AppState: ObservableObject {
             await MainActor.run {
                 self.session.contributionHeatmap = []
                 self.session.contributionUser = username
+                self.session.contributionError = error.userFacingMessage
             }
         }
     }
@@ -271,6 +274,7 @@ final class AppState: ObservableObject {
         ContributionCacheStore.clear()
         self.session.contributionHeatmap = []
         self.session.contributionUser = nil
+        self.session.contributionError = nil
     }
 
     nonisolated static func selectVisible(
@@ -333,6 +337,7 @@ final class Session: ObservableObject {
     @Published var lastError: String?
     @Published var contributionHeatmap: [HeatmapCell] = []
     @Published var contributionUser: String?
+    @Published var contributionError: String?
 }
 
 enum AccountState: Equatable {

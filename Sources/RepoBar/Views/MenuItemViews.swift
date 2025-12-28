@@ -13,19 +13,23 @@ struct RepoMenuCardView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ZStack(alignment: .leading) {
-                self.selectionBackground
-                VStack(alignment: .leading, spacing: self.verticalSpacing) {
-                    self.header
-                    self.stats
-                    self.activity
-                    self.errorOrLimit
-                    self.heatmap
-                }
-                .padding(.horizontal, 12)
-                .padding(.vertical, 8)
+            VStack(alignment: .leading, spacing: self.verticalSpacing) {
+                self.header
+                self.stats
+                self.activity
+                self.errorOrLimit
+                self.heatmap
             }
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
             .frame(maxWidth: .infinity, alignment: .leading)
+            .background(alignment: .leading) {
+                if self.isHighlighted {
+                    RoundedRectangle(cornerRadius: 6, style: .continuous)
+                        .fill(MenuHighlightStyle.selectionBackground(true))
+                        .padding(.vertical, 2)
+                }
+            }
             .foregroundStyle(MenuHighlightStyle.primary(self.isHighlighted))
             if self.showsSeparator {
                 Rectangle()
@@ -116,13 +120,6 @@ struct RepoMenuCardView: View {
             let filtered = HeatmapFilter.filter(self.repo.heatmap, span: self.heatmapSpan)
             HeatmapView(cells: filtered, accentTone: self.accentTone)
         }
-    }
-
-    private var selectionBackground: some View {
-        RoundedRectangle(cornerRadius: 6, style: .continuous)
-            .fill(MenuHighlightStyle.selectionBackground(self.isHighlighted))
-            .opacity(self.isHighlighted ? 1 : 0)
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
     private var verticalSpacing: CGFloat { 6 }

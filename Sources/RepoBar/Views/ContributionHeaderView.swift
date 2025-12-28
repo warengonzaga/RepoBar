@@ -35,10 +35,18 @@ struct ContributionHeaderView: View {
             ProgressView()
                 .frame(maxWidth: .infinity, minHeight: 80, maxHeight: 120, alignment: .center)
         } else if self.failed {
-            Text("Unable to load contributions right now.")
-                .font(.caption)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, minHeight: 80, alignment: .center)
+            VStack(spacing: 6) {
+                Text(self.session.contributionError ?? "Unable to load contributions right now.")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                Button("Retry") {
+                    self.appState.clearContributionCache()
+                    Task { await self.appState.loadContributionHeatmapIfNeeded(for: self.username) }
+                }
+                .buttonStyle(.borderless)
+            }
+            .frame(maxWidth: .infinity, minHeight: 80, alignment: .center)
         } else {
             let filtered = HeatmapFilter.filter(self.session.contributionHeatmap, span: self.session.settings.heatmapSpan)
             HeatmapView(cells: filtered, accentTone: self.session.settings.accentTone)
