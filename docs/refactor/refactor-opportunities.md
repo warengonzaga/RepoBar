@@ -54,7 +54,7 @@ Last updated: 2025-12-28
 
 ## Cache + Networking
 
-### [ ] 5) Repo detail cache API
+### [x] 5) Repo detail cache API
 - Wrap cache reads/writes behind `RepoDetailStore` interface.
 - Define cache freshness with explicit TTLs and stale flags.
 - Expose cache state to UI (stale vs fresh).

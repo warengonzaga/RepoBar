@@ -21,9 +21,8 @@ public actor GitHubClient {
     private var prefetchedRepos: [Repository] = []
     private var prefetchedReposExpiry: Date?
     private var latestRestRateLimit: RateLimitSnapshot?
-    private var repoDetailCache: [String: RepoDetailCache] = [:]
-    private let repoDetailStore = RepoDetailCacheStore()
-    private static let detailRefreshInterval: TimeInterval = 60 * 60
+    private var repoDetailStore = RepoDetailStore()
+    private let repoDetailCachePolicy = RepoDetailCachePolicy.default
 
     public init() {}
 
@@ -148,18 +147,10 @@ public actor GitHubClient {
         }
 
         let now = Date()
-        let cacheKey = "\(details.owner.login)/\(details.name)"
         let owner = details.owner.login
         let name = details.name
-        var cache: RepoDetailCache
-        if let inMemory = self.repoDetailCache[cacheKey] {
-            cache = inMemory
-        } else if let persisted = self.repoDetailStore.load(apiHost: self.apiHost, owner: owner, name: name) {
-            cache = persisted
-            self.repoDetailCache[cacheKey] = persisted
-        } else {
-            cache = RepoDetailCache()
-        }
+        var cache = self.repoDetailStore.load(apiHost: self.apiHost, owner: owner, name: name)
+        let cacheState = self.repoDetailCachePolicy.state(for: cache, now: now)
         let cachedOpenPulls = cache.openPulls ?? 0
         let cachedCiDetails = cache.ciDetails ?? CIStatusDetails(status: .unknown, runCount: nil)
         let cachedActivity = cache.latestActivity
@@ -168,12 +159,12 @@ public actor GitHubClient {
         let cachedHeatmap = cache.heatmap ?? []
         let cachedRelease = cache.latestRelease
 
-        let shouldFetchPulls = self.shouldFetch(cache.openPullsFetchedAt, now: now)
-        let shouldFetchCI = self.shouldFetch(cache.ciFetchedAt, now: now)
-        let shouldFetchActivity = self.shouldFetch(cache.activityFetchedAt, now: now)
-        let shouldFetchTraffic = self.shouldFetch(cache.trafficFetchedAt, now: now)
-        let shouldFetchHeatmap = self.shouldFetch(cache.heatmapFetchedAt, now: now)
-        let shouldFetchRelease = self.shouldFetch(cache.releaseFetchedAt, now: now)
+        let shouldFetchPulls = cacheState.openPulls.needsRefresh
+        let shouldFetchCI = cacheState.ci.needsRefresh
+        let shouldFetchActivity = cacheState.activity.needsRefresh
+        let shouldFetchTraffic = cacheState.traffic.needsRefresh
+        let shouldFetchHeatmap = cacheState.heatmap.needsRefresh
+        let shouldFetchRelease = cacheState.release.needsRefresh
         var didUpdateCache = false
 
         // Run all expensive lookups in parallel; individual failures are folded into the accumulator.
@@ -293,7 +284,7 @@ public actor GitHubClient {
         let finalActivity: ActivityEvent? = activity
         let finalActivityEvents = activityEvents
 
-        self.repoDetailCache[cacheKey] = cache
+        let finalCacheState = self.repoDetailCachePolicy.state(for: cache, now: now)
         if didUpdateCache {
             self.repoDetailStore.save(cache, apiHost: self.apiHost, owner: owner, name: name)
         }
@@ -318,7 +309,8 @@ public actor GitHubClient {
             latestActivity: finalActivity,
             activityEvents: finalActivityEvents,
             traffic: traffic,
-            heatmap: heatmap
+            heatmap: heatmap,
+            detailCacheState: finalCacheState
         )
     }
 
@@ -418,7 +410,6 @@ public actor GitHubClient {
         self.lastRateLimitError = nil
         self.prefetchedRepos = []
         self.prefetchedReposExpiry = nil
-        self.repoDetailCache = [:]
         self.repoDetailStore.clear()
     }
 
@@ -925,10 +916,6 @@ public actor GitHubClient {
         return nil
     }
 
-    private func shouldFetch(_ lastFetched: Date?, now: Date) -> Bool {
-        guard let lastFetched else { return true }
-        return now.timeIntervalSince(lastFetched) >= Self.detailRefreshInterval
-    }
 }
 
 private struct InstallationReposResponse: Decodable {

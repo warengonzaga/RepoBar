@@ -21,6 +21,7 @@ public struct Repository: Identifiable, Equatable, Sendable {
     public var activityEvents: [ActivityEvent]
     public var traffic: TrafficStats?
     public var heatmap: [HeatmapCell]
+    public var detailCacheState: RepoDetailCacheState?
 
     public init(
         id: String,
@@ -42,7 +43,8 @@ public struct Repository: Identifiable, Equatable, Sendable {
         latestActivity: ActivityEvent?,
         activityEvents: [ActivityEvent] = [],
         traffic: TrafficStats?,
-        heatmap: [HeatmapCell]
+        heatmap: [HeatmapCell],
+        detailCacheState: RepoDetailCacheState? = nil
     ) {
         self.id = id
         self.name = name
@@ -64,6 +66,7 @@ public struct Repository: Identifiable, Equatable, Sendable {
         self.activityEvents = activityEvents
         self.traffic = traffic
         self.heatmap = heatmap
+        self.detailCacheState = detailCacheState
     }
 
     public var fullName: String { "\(self.owner)/\(self.name)" }
@@ -89,7 +92,8 @@ public struct Repository: Identifiable, Equatable, Sendable {
             latestActivity: self.latestActivity,
             activityEvents: self.activityEvents,
             traffic: self.traffic,
-            heatmap: self.heatmap
+            heatmap: self.heatmap,
+            detailCacheState: self.detailCacheState
         )
     }
 }
