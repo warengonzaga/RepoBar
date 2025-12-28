@@ -687,7 +687,7 @@ private struct MenuItemContainerView<Content: View>: View {
 
     var body: some View {
         self.content
-            .padding(.trailing, self.showsSubmenuIndicator ? 12 : 0)
+            .padding(.trailing, 10)
             .frame(maxWidth: .infinity, alignment: .leading)
             .environment(\.menuItemHighlighted, self.highlightState.isHighlighted)
             .foregroundStyle(MenuHighlightStyle.primary(self.highlightState.isHighlighted))
@@ -705,7 +705,7 @@ private struct MenuItemContainerView<Content: View>: View {
                         .font(.caption2.weight(.semibold))
                         .foregroundStyle(MenuHighlightStyle.secondary(self.highlightState.isHighlighted))
                         .padding(.top, 8)
-                        .padding(.trailing, 8)
+                        .padding(.trailing, 6)
                 }
             }
     }
