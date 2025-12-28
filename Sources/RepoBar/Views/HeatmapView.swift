@@ -25,10 +25,9 @@ struct HeatmapView: View {
         GeometryReader { proxy in
             let size = proxy.size
             let cellSide = self.cellSide(for: size)
-            let columns = self.columnCount(for: size, cellSide: cellSide)
+            let columns = self.columnCount()
             let grid = HeatmapLayout.reshape(cells: self.cells, columns: columns, rows: self.rows)
-            let gridWidth = CGFloat(columns) * cellSide + CGFloat(max(columns - 1, 0)) * self.spacing
-            let xOffset = max((size.width - gridWidth) / 2, 0)
+            let xOffset: CGFloat = 0
             Canvas { context, _ in
                 for (x, column) in grid.enumerated() {
                     for (y, cell) in column.enumerated() {
@@ -92,11 +91,9 @@ struct HeatmapView: View {
         }
     }
 
-    private func columnCount(for size: CGSize, cellSide: CGFloat) -> Int {
-        guard cellSide > 0 else { return self.minColumns }
-        let available = max(size.width + self.spacing, 0)
-        let columns = Int(floor(available / (cellSide + self.spacing)))
-        return max(columns, self.minColumns)
+    private func columnCount() -> Int {
+        let dataColumns = max(1, Int(ceil(Double(self.cells.count) / Double(self.rows))))
+        return max(dataColumns, self.minColumns)
     }
 
     private func cellSide(for size: CGSize) -> CGFloat {

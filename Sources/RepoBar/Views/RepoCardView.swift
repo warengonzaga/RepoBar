@@ -180,11 +180,20 @@ struct RepoCardView: View {
     }
 
     private var ciColor: Color {
+        let isLight = self.colorScheme == .light
         switch self.repo.ciStatus {
-        case .passing: .green
-        case .failing: .red
-        case .pending: .yellow
-        case .unknown: .gray
+        case .passing:
+            isLight
+                ? Color(nsColor: NSColor(srgbRed: 0.12, green: 0.55, blue: 0.24, alpha: 1))
+                : Color(nsColor: NSColor(srgbRed: 0.23, green: 0.8, blue: 0.4, alpha: 1))
+        case .failing:
+            .red
+        case .pending:
+            isLight
+                ? Color(nsColor: NSColor(srgbRed: 0.0, green: 0.45, blue: 0.9, alpha: 1))
+                : Color(nsColor: NSColor(srgbRed: 0.2, green: 0.65, blue: 1.0, alpha: 1))
+        case .unknown:
+            .gray
         }
     }
 

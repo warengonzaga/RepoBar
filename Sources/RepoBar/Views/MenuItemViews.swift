@@ -54,7 +54,11 @@ struct RepoMenuCardView: View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             HStack(spacing: 6) {
                 Circle()
-                    .fill(MenuCIBadge.dotColor(for: self.repo.ciStatus, isLightAppearance: self.isLightAppearance))
+                    .fill(MenuCIBadge.dotColor(
+                        for: self.repo.ciStatus,
+                        isLightAppearance: self.isLightAppearance,
+                        isHighlighted: self.isHighlighted
+                    ))
                     .frame(width: 6, height: 6)
                 Text(self.repo.title)
                     .font(.subheadline)
@@ -83,7 +87,7 @@ struct RepoMenuCardView: View {
         HStack(spacing: 12) {
             MenuStatBadge(label: "Issues", value: self.repo.issues, systemImage: "exclamationmark.circle")
             MenuStatBadge(label: "PRs", value: self.repo.pulls, systemImage: "arrow.triangle.branch")
-            MenuStatBadge(label: nil, value: self.repo.stars, systemImage: "star")
+            MenuStatBadge(label: "Stars", value: self.repo.stars, systemImage: "star")
             MenuStatBadge(label: "Forks", value: self.repo.forks, systemImage: "tuningfork")
         }
     }
@@ -137,11 +141,11 @@ struct RepoMenuCardView: View {
     private var heatmap: some View {
         if self.showHeatmap, !self.repo.heatmap.isEmpty {
             let filtered = HeatmapFilter.filter(self.repo.heatmap, span: self.heatmapSpan, now: Date(), alignToWeek: true)
-            HeatmapView(cells: filtered, accentTone: self.accentTone, height: 44)
+            HeatmapView(cells: filtered, accentTone: self.accentTone, height: 48)
         }
     }
 
-    private var verticalSpacing: CGFloat { 4 }
+    private var verticalSpacing: CGFloat { 6 }
 
     private var isLightAppearance: Bool {
         NSApp.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .aqua
@@ -157,7 +161,7 @@ struct MenuStatBadge: View {
     let valueText: String
     let systemImage: String?
     @Environment(\.menuItemHighlighted) private var isHighlighted
-    private static let valueWidth: CGFloat = 30
+    private static let iconWidth: CGFloat = 12
 
     init(label: String?, value: Int, systemImage: String? = nil) {
         self.label = label
@@ -176,6 +180,7 @@ struct MenuStatBadge: View {
             if let systemImage {
                 Image(systemName: systemImage)
                     .font(.caption2)
+                    .frame(width: Self.iconWidth, alignment: .center)
             }
             if let label {
                 Text(label)
@@ -184,7 +189,6 @@ struct MenuStatBadge: View {
             Text(self.valueText)
                 .font(.caption2)
                 .monospacedDigit()
-                .frame(width: Self.valueWidth, alignment: .trailing)
                 .lineLimit(1)
         }
         .foregroundStyle(MenuHighlightStyle.secondary(self.isHighlighted))
@@ -290,21 +294,29 @@ struct MenuCIBadge: View {
     }
 
     private var color: Color {
-        Self.dotColor(for: self.status, isLightAppearance: self.isLightAppearance)
+        Self.dotColor(for: self.status, isLightAppearance: self.isLightAppearance, isHighlighted: self.isHighlighted)
     }
 
     private var isLightAppearance: Bool {
         NSApp.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .aqua
     }
 
-    static func dotColor(for status: CIStatus, isLightAppearance: Bool) -> Color {
+    static func dotColor(for status: CIStatus, isLightAppearance: Bool, isHighlighted: Bool) -> Color {
         let base: NSColor = switch status {
-        case .passing: .systemGreen
-        case .failing: .systemRed
-        case .pending: .systemYellow
-        case .unknown: .tertiaryLabelColor
+        case .passing:
+            isLightAppearance
+                ? NSColor(srgbRed: 0.12, green: 0.55, blue: 0.24, alpha: 1)
+                : NSColor(srgbRed: 0.23, green: 0.8, blue: 0.4, alpha: 1)
+        case .failing:
+            .systemRed
+        case .pending:
+            isLightAppearance
+                ? NSColor(srgbRed: 0.0, green: 0.45, blue: 0.9, alpha: 1)
+                : NSColor(srgbRed: 0.2, green: 0.65, blue: 1.0, alpha: 1)
+        case .unknown:
+            .tertiaryLabelColor
         }
-        let alpha: CGFloat = isLightAppearance ? 0.45 : 0.85
+        let alpha: CGFloat = isHighlighted ? 1.0 : (isLightAppearance ? 0.8 : 0.9)
         let adjusted = base.withAlphaComponent(alpha)
         return Color(nsColor: adjusted)
     }
