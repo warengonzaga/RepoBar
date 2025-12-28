@@ -17,6 +17,7 @@
 ## Coding Style & Naming Conventions
 - Enforce formatting with `swiftformat` (4-space indent, inline commas, wrap args/collections before first element, no semicolons) and lint with `swiftlint` (see `.swiftlint.yml`; unused imports/declarations flagged, many length limits disabled).
 - Swift 6.2, prefer strict typing and small files (<500 LOC as a guardrail); keep MenuBarExtra/UI code in SwiftUI with extracted helpers.
+- SwiftUI: use modern `@Observable` (not `ObservableObject`).
 - Naming: types UpperCamelCase; methods/properties lowerCamelCase; tests mirror subject names; avoid abbreviations except common GitHub/API terms.
 
 ## Testing Guidelines
