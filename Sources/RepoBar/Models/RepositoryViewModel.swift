@@ -58,8 +58,12 @@ struct RepositoryViewModel: Identifiable, Equatable {
 
         self.activityLine = repo.activityLine
         self.activityURL = repo.activityURL
-        self.activityEvents = repo.activityEvents
-        if let activityDate = repo.latestActivity?.date ?? repo.activityEvents.first?.date {
+        if repo.activityEvents.isEmpty, let latest = repo.latestActivity {
+            self.activityEvents = [latest]
+        } else {
+            self.activityEvents = repo.activityEvents
+        }
+        if let activityDate = repo.latestActivity?.date ?? self.activityEvents.first?.date {
             self.latestActivityAge = RelativeFormatter.string(from: activityDate, relativeTo: now)
         } else {
             self.latestActivityAge = nil
