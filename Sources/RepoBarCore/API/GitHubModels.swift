@@ -269,8 +269,12 @@ struct EventCommit: Decodable {
 }
 
 extension RepoEvent {
+    var eventType: ActivityEventType? {
+        ActivityEventType.parse(self.type)
+    }
+
     var displayTitle: String {
-        let base = Self.displayName(for: self.type)
+        let base = Self.displayName(for: self.eventType, raw: self.type)
         guard let action = self.payload.action, action.isEmpty == false else { return base }
         let actionLabel = action.replacingOccurrences(of: "_", with: " ")
         return "\(base) \(actionLabel)"
@@ -291,7 +295,7 @@ extension RepoEvent {
             ?? self.activityTitle(owner: owner, name: name)
         let repoURL = URL(string: "https://github.com/\(owner)/\(name)")!
         let starURL = repoURL.appending(path: "stargazers")
-        let fallbackURL = (self.type == "WatchEvent") ? starURL : repoURL
+        let fallbackURL = (self.eventType == .watch) ? starURL : repoURL
         let commitSHA = self.payload.head ?? self.payload.commits?.first?.sha
         let commitURL = commitSHA.map { repoURL.appending(path: "commit").appending(path: $0) }
         let url = self.payload.comment?.htmlUrl
@@ -315,22 +319,22 @@ extension RepoEvent {
     private func activityTitle(owner: String, name: String) -> String {
         let action = self.actionSuffix()
         let repoTarget = self.repoTarget(owner: owner, name: name)
-        switch self.type {
-        case "PullRequestEvent":
+        switch self.eventType {
+        case .pullRequest:
             return self.issueTitle(prefix: "PR", number: self.payload.pullRequest?.number, title: self.payload.pullRequest?.title, action: action)
-        case "IssuesEvent":
+        case .issues:
             return self.issueTitle(prefix: "Issue", number: self.payload.issue?.number, title: self.payload.issue?.title, action: action)
-        case "ReleaseEvent":
+        case .release:
             let tag = self.payload.release?.tagName ?? self.payload.release?.name
             let base = tag.map { "Release \($0)" } ?? "Release"
             return action.map { "\(base) \($0)" } ?? base
-        case "WatchEvent":
+        case .watch:
             return "Starred"
-        case "ForkEvent":
+        case .fork:
             return self.decorateTarget(base: "Forked", repoTarget: repoTarget)
-        case "CreateEvent":
+        case .create:
             return self.decorateTarget(base: self.refTitle(prefix: "Created"), repoTarget: repoTarget)
-        case "DeleteEvent":
+        case .delete:
             return self.decorateTarget(base: self.refTitle(prefix: "Deleted"), repoTarget: repoTarget)
         default:
             return self.decorateTarget(base: self.displayTitle, repoTarget: repoTarget)
@@ -347,20 +351,20 @@ extension RepoEvent {
 
     private func actionSuffix() -> String? {
         guard let action = self.payload.action, action.isEmpty == false else { return nil }
-        if self.type == "WatchEvent", action == "started" {
+        if self.eventType == .watch, action == "started" {
             return "starred"
         }
-        if self.type == "PullRequestEvent", action == "closed", self.payload.pullRequest?.merged == true {
+        if self.eventType == .pullRequest, action == "closed", self.payload.pullRequest?.merged == true {
             return "merged"
         }
         return action.replacingOccurrences(of: "_", with: " ")
     }
 
     private func repoTarget(owner: String, name: String) -> String? {
-        switch self.type {
-        case "ForkEvent":
+        switch self.eventType {
+        case .fork:
             return self.payload.forkee?.fullName ?? "\(owner)/\(name)"
-        case "CreateEvent", "DeleteEvent":
+        case .create, .delete:
             return "\(owner)/\(name)"
         default:
             return nil
@@ -383,27 +387,27 @@ extension RepoEvent {
         return "\(base) → \(repoTarget)"
     }
 
-    static func displayName(for type: String) -> String {
+    static func displayName(for type: ActivityEventType?, raw: String) -> String {
+        guard let type else { return Self.prettyName(for: raw) }
         return switch type {
-        case "PullRequestEvent": "Pull Request"
-        case "PullRequestReviewEvent": "Pull Request Review"
-        case "PullRequestReviewCommentEvent": "Pull Request Review Comment"
-        case "PullRequestReviewThreadEvent": "Pull Request Review Thread"
-        case "IssueCommentEvent": "Issue Comment"
-        case "IssuesEvent": "Issue"
-        case "PushEvent": "Push"
-        case "ReleaseEvent": "Release"
-        case "WatchEvent": "Star"
-        case "ForkEvent": "Fork"
-        case "CreateEvent": "Create"
-        case "DeleteEvent": "Delete"
-        case "MemberEvent": "Member"
-        case "PublicEvent": "Public"
-        case "GollumEvent": "Wiki"
-        case "CommitCommentEvent": "Commit Comment"
-        case "DiscussionEvent": "Discussion"
-        case "SponsorshipEvent": "Sponsorship"
-        default: Self.prettyName(for: type)
+        case .pullRequest: "Pull Request"
+        case .pullRequestReview: "Pull Request Review"
+        case .pullRequestReviewComment: "Pull Request Review Comment"
+        case .pullRequestReviewThread: "Pull Request Review Thread"
+        case .issueComment: "Issue Comment"
+        case .issues: "Issue"
+        case .push: "Push"
+        case .release: "Release"
+        case .watch: "Star"
+        case .fork: "Fork"
+        case .create: "Create"
+        case .delete: "Delete"
+        case .member: "Member"
+        case .public: "Public"
+        case .gollum: "Wiki"
+        case .commitComment: "Commit Comment"
+        case .discussion: "Discussion"
+        case .sponsorship: "Sponsorship"
         }
     }
 

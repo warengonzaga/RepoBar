@@ -306,26 +306,26 @@ final class StatusBarMenuBuilder {
     }
 
     private func activitySymbolName(for event: ActivityEvent) -> String {
-        guard let type = event.eventType else { return "clock" }
+        guard let type = event.eventTypeEnum else { return "clock" }
         switch type {
-        case "PullRequestEvent": return "arrow.triangle.branch"
-        case "PullRequestReviewEvent": return "checkmark.bubble"
-        case "PullRequestReviewCommentEvent": return "text.bubble"
-        case "PullRequestReviewThreadEvent": return "text.bubble"
-        case "IssueCommentEvent": return "text.bubble"
-        case "IssuesEvent": return "exclamationmark.circle"
-        case "PushEvent": return "arrow.up.circle"
-        case "ReleaseEvent": return "tag"
-        case "WatchEvent": return "star"
-        case "ForkEvent": return "doc.on.doc"
-        case "CreateEvent": return "plus"
-        case "DeleteEvent": return "trash"
-        case "MemberEvent": return "person.badge.plus"
-        case "GollumEvent": return "book"
-        case "CommitCommentEvent": return "text.bubble"
-        case "DiscussionEvent": return "bubble.left.and.bubble.right"
-        case "SponsorshipEvent": return "heart"
-        default: return "clock"
+        case .pullRequest: return "arrow.triangle.branch"
+        case .pullRequestReview: return "checkmark.bubble"
+        case .pullRequestReviewComment: return "text.bubble"
+        case .pullRequestReviewThread: return "text.bubble"
+        case .issueComment: return "text.bubble"
+        case .issues: return "exclamationmark.circle"
+        case .push: return "arrow.up.circle"
+        case .release: return "tag"
+        case .watch: return "star"
+        case .fork: return "doc.on.doc"
+        case .create: return "plus"
+        case .delete: return "trash"
+        case .member: return "person.badge.plus"
+        case .public: return "globe"
+        case .gollum: return "book"
+        case .commitComment: return "text.bubble"
+        case .discussion: return "bubble.left.and.bubble.right"
+        case .sponsorship: return "heart"
         }
     }
 

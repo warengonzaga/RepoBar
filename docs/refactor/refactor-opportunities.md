@@ -97,7 +97,7 @@ Last updated: 2025-12-28
 
 ## Models + Types
 
-### [ ] 13) Event type enums
+### [x] 13) Event type enums
 - Replace string checks for GitHub event types with enum.
 - Stronger mapping for icons and labels.
 - Easier to add new event types later.

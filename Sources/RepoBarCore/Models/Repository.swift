@@ -152,6 +152,10 @@ public struct ActivityEvent: Codable, Equatable, Sendable {
         self.url = url
         self.eventType = eventType
     }
+
+    public var eventTypeEnum: ActivityEventType? {
+        ActivityEventType.parse(self.eventType)
+    }
 }
 
 public struct HeatmapCell: Identifiable, Equatable, Codable, Sendable {
