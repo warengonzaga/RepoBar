@@ -13,6 +13,8 @@ struct RepoBarRoot: ParsableCommand {
             subcommands: [
                 ReposCommand.self,
                 RepoCommand.self,
+                IssuesCommand.self,
+                PullsCommand.self,
                 RefreshCommand.self,
                 ContributionsCommand.self,
                 LoginCommand.self,

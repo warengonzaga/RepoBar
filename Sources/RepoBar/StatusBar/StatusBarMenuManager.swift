@@ -8,6 +8,12 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
     private let appState: AppState
     private var mainMenu: NSMenu?
     private lazy var menuBuilder = StatusBarMenuBuilder(appState: self.appState, target: self)
+    private var recentListMenuContexts: [ObjectIdentifier: RepoRecentMenuContext] = [:]
+
+    private let recentListLimit = 20
+    private let recentListCacheTTL: TimeInterval = 90
+    private let recentIssuesCache = RecentListCache<RepoIssueSummary>()
+    private let recentPullRequestsCache = RecentListCache<RepoPullRequestSummary>()
 
     init(appState: AppState) {
         self.appState = appState
@@ -46,6 +52,7 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
 
     @objc func menuFiltersChanged() {
         guard let menu = self.mainMenu else { return }
+        self.recentListMenuContexts.removeAll(keepingCapacity: true)
         self.appState.persistSettings()
         self.menuBuilder.populateMainMenu(menu)
         self.menuBuilder.refreshMenuViewHeights(in: menu)
@@ -108,6 +115,11 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
     }
 
     @objc func openActivityEvent(_ sender: NSMenuItem) {
+        guard let url = sender.representedObject as? URL else { return }
+        self.open(url: url)
+    }
+
+    @objc func openURLItem(_ sender: NSMenuItem) {
         guard let url = sender.representedObject as? URL else { return }
         self.open(url: url)
     }
@@ -177,7 +189,14 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
 
     func menuWillOpen(_ menu: NSMenu) {
         menu.appearance = NSApp.effectiveAppearance
+        if let context = self.recentListMenuContexts[ObjectIdentifier(menu)] {
+            Task { @MainActor [weak self] in
+                await self?.refreshRecentListMenu(menu: menu, context: context)
+            }
+            return
+        }
         if menu === self.mainMenu {
+            self.recentListMenuContexts.removeAll(keepingCapacity: true)
             self.appState.refreshIfNeededForMenu()
             self.menuBuilder.populateMainMenu(menu)
             self.menuBuilder.refreshMenuViewHeights(in: menu)
@@ -206,6 +225,234 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
 
     // MARK: - Main menu
 
+    private func refreshRecentListMenu(menu: NSMenu, context: RepoRecentMenuContext) async {
+        guard case .loggedIn = self.appState.session.account else {
+            self.populateRecentListMenu(menu, openTitle: "Sign in to view", openAction: nil, fullName: context.fullName, systemImage: nil, rows: .signedOut)
+            menu.update()
+            return
+        }
+        guard let (owner, name) = self.ownerAndName(from: context.fullName) else {
+            self.populateRecentListMenu(menu, openTitle: "Open on GitHub", openAction: #selector(self.openRepo), fullName: context.fullName, systemImage: "folder", rows: .message("Invalid repository name"))
+            menu.update()
+            return
+        }
+
+        let now = Date()
+        switch context.kind {
+        case .issues:
+            let cached = self.recentIssuesCache.cached(for: context.fullName, now: now, maxAge: self.recentListCacheTTL)
+            if let cached {
+                self.populateRecentListMenu(
+                    menu,
+                    openTitle: "Open Issues",
+                    openAction: #selector(self.openIssues),
+                    fullName: context.fullName,
+                    systemImage: "exclamationmark.circle",
+                    rows: .issues(cached)
+                )
+            } else {
+                self.populateRecentListMenu(
+                    menu,
+                    openTitle: "Open Issues",
+                    openAction: #selector(self.openIssues),
+                    fullName: context.fullName,
+                    systemImage: "exclamationmark.circle",
+                    rows: .loading
+                )
+            }
+            menu.update()
+
+            guard self.recentIssuesCache.needsRefresh(for: context.fullName, now: now, maxAge: self.recentListCacheTTL) else { return }
+            let task = self.recentIssuesCache.task(for: context.fullName) { [github = self.appState.github, recentListLimit = self.recentListLimit] in
+                try await github.recentIssues(owner: owner, name: name, limit: recentListLimit)
+            }
+            defer { self.recentIssuesCache.clearInflight(for: context.fullName) }
+            do {
+                let items = try await task.value
+                self.recentIssuesCache.store(items, for: context.fullName, fetchedAt: Date())
+                self.populateRecentListMenu(
+                    menu,
+                    openTitle: "Open Issues",
+                    openAction: #selector(self.openIssues),
+                    fullName: context.fullName,
+                    systemImage: "exclamationmark.circle",
+                    rows: .issues(items)
+                )
+            } catch {
+                self.populateRecentListMenu(
+                    menu,
+                    openTitle: "Open Issues",
+                    openAction: #selector(self.openIssues),
+                    fullName: context.fullName,
+                    systemImage: "exclamationmark.circle",
+                    rows: .message("Failed to load")
+                )
+            }
+            menu.update()
+        case .pullRequests:
+            let cached = self.recentPullRequestsCache.cached(for: context.fullName, now: now, maxAge: self.recentListCacheTTL)
+            if let cached {
+                self.populateRecentListMenu(
+                    menu,
+                    openTitle: "Open Pull Requests",
+                    openAction: #selector(self.openPulls),
+                    fullName: context.fullName,
+                    systemImage: "arrow.triangle.branch",
+                    rows: .pullRequests(cached)
+                )
+            } else {
+                self.populateRecentListMenu(
+                    menu,
+                    openTitle: "Open Pull Requests",
+                    openAction: #selector(self.openPulls),
+                    fullName: context.fullName,
+                    systemImage: "arrow.triangle.branch",
+                    rows: .loading
+                )
+            }
+            menu.update()
+
+            guard self.recentPullRequestsCache.needsRefresh(for: context.fullName, now: now, maxAge: self.recentListCacheTTL) else { return }
+            let task = self.recentPullRequestsCache.task(for: context.fullName) { [github = self.appState.github, recentListLimit = self.recentListLimit] in
+                try await github.recentPullRequests(owner: owner, name: name, limit: recentListLimit)
+            }
+            defer { self.recentPullRequestsCache.clearInflight(for: context.fullName) }
+            do {
+                let items = try await task.value
+                self.recentPullRequestsCache.store(items, for: context.fullName, fetchedAt: Date())
+                self.populateRecentListMenu(
+                    menu,
+                    openTitle: "Open Pull Requests",
+                    openAction: #selector(self.openPulls),
+                    fullName: context.fullName,
+                    systemImage: "arrow.triangle.branch",
+                    rows: .pullRequests(items)
+                )
+            } catch {
+                self.populateRecentListMenu(
+                    menu,
+                    openTitle: "Open Pull Requests",
+                    openAction: #selector(self.openPulls),
+                    fullName: context.fullName,
+                    systemImage: "arrow.triangle.branch",
+                    rows: .message("Failed to load")
+                )
+            }
+            menu.update()
+        }
+    }
+
+    private enum RecentMenuRows {
+        case signedOut
+        case loading
+        case message(String)
+        case issues([RepoIssueSummary])
+        case pullRequests([RepoPullRequestSummary])
+    }
+
+    private func populateRecentListMenu(
+        _ menu: NSMenu,
+        openTitle: String,
+        openAction: Selector?,
+        fullName: String,
+        systemImage: String?,
+        rows: RecentMenuRows
+    ) {
+        menu.removeAllItems()
+
+        let open = NSMenuItem(title: openTitle, action: openAction, keyEquivalent: "")
+        open.target = self
+        open.representedObject = fullName
+        if let systemImage, let image = NSImage(systemSymbolName: systemImage, accessibilityDescription: nil) {
+            image.size = NSSize(width: 14, height: 14)
+            image.isTemplate = true
+            open.image = image
+        }
+        open.isEnabled = openAction != nil
+        menu.addItem(open)
+
+        menu.addItem(.separator())
+
+        switch rows {
+        case .signedOut:
+            let item = NSMenuItem(title: "Sign in to load items", action: nil, keyEquivalent: "")
+            item.isEnabled = false
+            menu.addItem(item)
+        case .loading:
+            let item = NSMenuItem(title: "Loading…", action: nil, keyEquivalent: "")
+            item.isEnabled = false
+            menu.addItem(item)
+        case let .message(text):
+            let item = NSMenuItem(title: text, action: nil, keyEquivalent: "")
+            item.isEnabled = false
+            menu.addItem(item)
+        case let .issues(items):
+            if items.isEmpty {
+                let item = NSMenuItem(title: "No open issues", action: nil, keyEquivalent: "")
+                item.isEnabled = false
+                menu.addItem(item)
+                return
+            }
+            for issue in items.prefix(self.recentListLimit) {
+                let item = NSMenuItem(
+                    title: self.recentItemTitle(number: issue.number, title: issue.title),
+                    action: #selector(self.openURLItem),
+                    keyEquivalent: ""
+                )
+                item.target = self
+                item.representedObject = issue.url
+                item.toolTip = self.recentItemTooltip(title: issue.title, author: issue.authorLogin, updatedAt: issue.updatedAt)
+                if let image = NSImage(systemSymbolName: "exclamationmark.circle", accessibilityDescription: nil) {
+                    image.size = NSSize(width: 14, height: 14)
+                    image.isTemplate = true
+                    item.image = image
+                }
+                menu.addItem(item)
+            }
+        case let .pullRequests(items):
+            if items.isEmpty {
+                let item = NSMenuItem(title: "No open pull requests", action: nil, keyEquivalent: "")
+                item.isEnabled = false
+                menu.addItem(item)
+                return
+            }
+            for pr in items.prefix(self.recentListLimit) {
+                let prefix = pr.isDraft ? "Draft " : ""
+                let item = NSMenuItem(
+                    title: prefix + self.recentItemTitle(number: pr.number, title: pr.title),
+                    action: #selector(self.openURLItem),
+                    keyEquivalent: ""
+                )
+                item.target = self
+                item.representedObject = pr.url
+                item.toolTip = self.recentItemTooltip(title: pr.title, author: pr.authorLogin, updatedAt: pr.updatedAt)
+                if let image = NSImage(systemSymbolName: "arrow.triangle.branch", accessibilityDescription: nil) {
+                    image.size = NSSize(width: 14, height: 14)
+                    image.isTemplate = true
+                    item.image = image
+                }
+                menu.addItem(item)
+            }
+        }
+    }
+
+    private func recentItemTitle(number: Int, title: String) -> String {
+        let trimmed = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        let prefix = String(trimmed.prefix(80))
+        let suffix = trimmed.count > 80 ? "…" : ""
+        return "#\(number) \(prefix)\(suffix)"
+    }
+
+    private func recentItemTooltip(title: String, author: String?, updatedAt: Date) -> String {
+        var parts: [String] = []
+        if let author, !author.isEmpty {
+            parts.append("@\(author)")
+        }
+        parts.append("Updated \(RelativeFormatter.string(from: updatedAt, relativeTo: Date()))")
+        parts.append(title)
+        return parts.joined(separator: "\n")
+    }
+
     private func repoModel(from sender: NSMenuItem) -> RepositoryDisplayModel? {
         guard let fullName = self.repoFullName(from: sender) else { return nil }
         guard let repo = self.appState.session.repositories.first(where: { $0.fullName == fullName }) else { return nil }
@@ -226,6 +473,12 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
         return url
     }
 
+    private func ownerAndName(from fullName: String) -> (String, String)? {
+        let parts = fullName.split(separator: "/", maxSplits: 1)
+        guard parts.count == 2 else { return nil }
+        return (String(parts[0]), String(parts[1]))
+    }
+
     private func openRepoPath(sender: NSMenuItem, path: String) {
         guard let fullName = self.repoFullName(from: sender),
               var url = self.repoURL(for: fullName) else { return }
@@ -238,4 +491,43 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
     }
 
     @objc func menuItemNoOp(_: NSMenuItem) {}
+
+    func registerRecentListMenu(_ menu: NSMenu, context: RepoRecentMenuContext) {
+        self.recentListMenuContexts[ObjectIdentifier(menu)] = context
+    }
+}
+
+private final class RecentListCache<Item: Sendable> {
+    struct Entry { var fetchedAt: Date
+        var items: [Item]
+    }
+
+    private var entries: [String: Entry] = [:]
+    private var inflight: [String: Task<[Item], Error>] = [:]
+
+    func cached(for key: String, now: Date, maxAge: TimeInterval) -> [Item]? {
+        guard let entry = entries[key] else { return nil }
+        guard now.timeIntervalSince(entry.fetchedAt) <= maxAge else { return nil }
+        return entry.items
+    }
+
+    func needsRefresh(for key: String, now: Date, maxAge: TimeInterval) -> Bool {
+        guard let entry = entries[key] else { return true }
+        return now.timeIntervalSince(entry.fetchedAt) > maxAge
+    }
+
+    func task(for key: String, factory: @escaping @Sendable () async throws -> [Item]) -> Task<[Item], Error> {
+        if let existing = inflight[key] { return existing }
+        let task = Task { try await factory() }
+        self.inflight[key] = task
+        return task
+    }
+
+    func clearInflight(for key: String) {
+        self.inflight[key] = nil
+    }
+
+    func store(_ items: [Item], for key: String, fetchedAt: Date) {
+        self.entries[key] = Entry(fetchedAt: fetchedAt, items: items)
+    }
 }

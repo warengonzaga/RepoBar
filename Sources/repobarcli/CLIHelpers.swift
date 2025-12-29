@@ -186,6 +186,8 @@ enum HelpTarget: String {
     case root
     case repos
     case repo
+    case issues
+    case pulls
     case refresh
     case contributions
     case login
@@ -212,6 +214,10 @@ enum HelpTarget: String {
             return .repos
         case RepoCommand.commandName:
             return .repo
+        case IssuesCommand.commandName:
+            return .issues
+        case PullsCommand.commandName:
+            return .pulls
         case RefreshCommand.commandName:
             return .refresh
         case ContributionsCommand.commandName:
@@ -237,6 +243,8 @@ func printHelp(_ target: HelpTarget) {
         Usage:
           repobar [repos] [--limit N] [--age DAYS] [--release] [--event] [--forks] [--archived] [--scope VAL] [--filter VAL] [--pinned-only] [--only-with VAL] [--json] [--plain] [--sort KEY]
           repobar repo <owner/name> [--traffic] [--heatmap] [--release] [--json] [--plain]
+          repobar issues <owner/name> [--limit N] [--json] [--plain]
+          repobar pulls <owner/name> [--limit N] [--json] [--plain]
           repobar refresh [--json] [--plain]
           repobar contributions [--login USER] [--json] [--plain]
           repobar login [--host URL] [--client-id ID] [--client-secret SECRET] [--loopback-port PORT]
@@ -294,6 +302,32 @@ func printHelp(_ target: HelpTarget) {
           --traffic   Include traffic stats
           --heatmap   Include commit activity heatmap
           --release   Include latest release data
+          --json      Output JSON instead of formatted text
+          --plain     Plain output (no links, no colors)
+          --no-color  Disable color output
+        """
+    case .issues:
+        """
+        repobar issues - list open issues
+
+        Usage:
+          repobar issues <owner/name> [--limit N] [--json] [--plain]
+
+        Options:
+          --limit N   Max issues to fetch (default: 20)
+          --json      Output JSON instead of formatted text
+          --plain     Plain output (no links, no colors)
+          --no-color  Disable color output
+        """
+    case .pulls:
+        """
+        repobar pulls - list open pull requests
+
+        Usage:
+          repobar pulls <owner/name> [--limit N] [--json] [--plain]
+
+        Options:
+          --limit N   Max PRs to fetch (default: 20)
           --json      Output JSON instead of formatted text
           --plain     Plain output (no links, no colors)
           --no-color  Disable color output

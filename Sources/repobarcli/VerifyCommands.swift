@@ -167,6 +167,159 @@ struct RepoCommand: CommanderRunnableCommand {
 }
 
 @MainActor
+struct IssuesCommand: CommanderRunnableCommand {
+    nonisolated static let commandName = "issues"
+
+    @Option(name: .customLong("limit"), help: "Max issues to fetch (default: 20)")
+    var limit: Int = 20
+
+    @OptionGroup
+    var output: OutputOptions
+
+    private var repoName: String?
+
+    static var commandDescription: CommandDescription {
+        CommandDescription(
+            commandName: commandName,
+            abstract: "List open issues by recently updated"
+        )
+    }
+
+    mutating func bind(_ values: ParsedValues) throws {
+        self.limit = try values.decodeOption("limit") ?? 20
+        self.output.bind(values)
+
+        if values.positional.count > 1 {
+            throw ValidationError("Only one repository can be specified")
+        }
+        self.repoName = values.positional.first
+    }
+
+    mutating func run() async throws {
+        if self.limit <= 0 {
+            throw ValidationError("--limit must be greater than 0")
+        }
+        guard let repoName, !repoName.isEmpty else {
+            throw ValidationError("Missing repository name (owner/name)")
+        }
+        let parts = repoName.split(separator: "/", maxSplits: 1).map(String.init)
+        guard parts.count == 2 else {
+            throw ValidationError("Repository must be in owner/name format")
+        }
+
+        let (client, settings, _) = try await makeAuthenticatedClient()
+        let issues = try await client.recentIssues(owner: parts[0], name: parts[1], limit: self.limit)
+
+        if self.output.jsonOutput {
+            try printJSON(RepoIssuesOutput(
+                repo: makeRepoURL(baseHost: settings.enterpriseHost ?? settings.githubHost, owner: parts[0], name: parts[1]),
+                count: issues.count,
+                issues: issues.map {
+                    IssueOutput(
+                        number: $0.number,
+                        title: $0.title,
+                        url: $0.url,
+                        updatedAt: $0.updatedAt,
+                        author: $0.authorLogin
+                    )
+                }
+            ))
+            return
+        }
+
+        if self.output.plain == false, self.output.useColor {
+            print("Issues: \(repoName)")
+        }
+        let lines = issuesTableLines(
+            issues,
+            useColor: self.output.useColor,
+            includeURL: self.output.plain == false,
+            now: Date()
+        )
+        for line in lines {
+            print(line)
+        }
+    }
+}
+
+@MainActor
+struct PullsCommand: CommanderRunnableCommand {
+    nonisolated static let commandName = "pulls"
+
+    @Option(name: .customLong("limit"), help: "Max PRs to fetch (default: 20)")
+    var limit: Int = 20
+
+    @OptionGroup
+    var output: OutputOptions
+
+    private var repoName: String?
+
+    static var commandDescription: CommandDescription {
+        CommandDescription(
+            commandName: commandName,
+            abstract: "List open pull requests by recently updated"
+        )
+    }
+
+    mutating func bind(_ values: ParsedValues) throws {
+        self.limit = try values.decodeOption("limit") ?? 20
+        self.output.bind(values)
+
+        if values.positional.count > 1 {
+            throw ValidationError("Only one repository can be specified")
+        }
+        self.repoName = values.positional.first
+    }
+
+    mutating func run() async throws {
+        if self.limit <= 0 {
+            throw ValidationError("--limit must be greater than 0")
+        }
+        guard let repoName, !repoName.isEmpty else {
+            throw ValidationError("Missing repository name (owner/name)")
+        }
+        let parts = repoName.split(separator: "/", maxSplits: 1).map(String.init)
+        guard parts.count == 2 else {
+            throw ValidationError("Repository must be in owner/name format")
+        }
+
+        let (client, settings, _) = try await makeAuthenticatedClient()
+        let pulls = try await client.recentPullRequests(owner: parts[0], name: parts[1], limit: self.limit)
+
+        if self.output.jsonOutput {
+            try printJSON(RepoPullsOutput(
+                repo: makeRepoURL(baseHost: settings.enterpriseHost ?? settings.githubHost, owner: parts[0], name: parts[1]),
+                count: pulls.count,
+                pulls: pulls.map {
+                    PullRequestOutput(
+                        number: $0.number,
+                        title: $0.title,
+                        url: $0.url,
+                        updatedAt: $0.updatedAt,
+                        author: $0.authorLogin,
+                        draft: $0.isDraft
+                    )
+                }
+            ))
+            return
+        }
+
+        if self.output.plain == false, self.output.useColor {
+            print("Pull Requests: \(repoName)")
+        }
+        let lines = pullsTableLines(
+            pulls,
+            useColor: self.output.useColor,
+            includeURL: self.output.plain == false,
+            now: Date()
+        )
+        for line in lines {
+            print(line)
+        }
+    }
+}
+
+@MainActor
 struct RefreshCommand: CommanderRunnableCommand {
     nonisolated static let commandName = "refresh"
 
@@ -277,6 +430,39 @@ private func printJSON(_ output: some Encodable) throws {
     if let json = String(data: data, encoding: .utf8) {
         print(json)
     }
+}
+
+private func makeRepoURL(baseHost: URL, owner: String, name: String) -> URL {
+    baseHost.appending(path: "/\(owner)/\(name)")
+}
+
+private struct RepoIssuesOutput: Encodable {
+    let repo: URL
+    let count: Int
+    let issues: [IssueOutput]
+}
+
+private struct IssueOutput: Encodable {
+    let number: Int
+    let title: String
+    let url: URL
+    let updatedAt: Date
+    let author: String?
+}
+
+private struct RepoPullsOutput: Encodable {
+    let repo: URL
+    let count: Int
+    let pulls: [PullRequestOutput]
+}
+
+private struct PullRequestOutput: Encodable {
+    let number: Int
+    let title: String
+    let url: URL
+    let updatedAt: Date
+    let author: String?
+    let draft: Bool
 }
 
 private struct ContributionsOutput: Encodable {

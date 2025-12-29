@@ -30,6 +30,9 @@ enum RepoBarCLI {
         if normalized.count > 1, normalized[1] == "list" {
             normalized[1] = "repos"
         }
+        if normalized.count > 1, ["pr", "prs"].contains(normalized[1]) {
+            normalized[1] = "pulls"
+        }
         return normalized
     }
 
@@ -48,6 +51,8 @@ enum RepoBarCLI {
     private static let commandRegistry: [String: CommanderRunnableCommand.Type] = [
         ReposCommand.commandName: ReposCommand.self,
         RepoCommand.commandName: RepoCommand.self,
+        IssuesCommand.commandName: IssuesCommand.self,
+        PullsCommand.commandName: PullsCommand.self,
         RefreshCommand.commandName: RefreshCommand.self,
         ContributionsCommand.commandName: ContributionsCommand.self,
         LoginCommand.commandName: LoginCommand.self,

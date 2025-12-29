@@ -5,6 +5,7 @@
 ### Added
 - RepoBarCore shared module for GitHub API/auth/models used by the app and CLI.
 - repobar bundled CLI with login/logout/status and repo listing (activity, issues, PRs, stars), JSON output, and limit flag.
+- repobar CLI now supports `issues` and `pulls` to list the 20 most recently updated open items for a repository.
 - CLI repo listing now filters to the signed-in user and owned orgs (admin membership).
 - repobar now defaults to 365-day activity filtering and supports `--age` to override.
 - repobar shows clickable repo links by default (use `--plain` for no links/colors/URLs).
@@ -43,6 +44,7 @@
 - Repo menu stat row now includes last push age.
 - Repo submenus now list remaining repository details like CI run count and traffic stats when available.
 - Repo submenus now include the last 10 recent activity events with quick links.
+- Repo submenus now include nested lists for Issues and Pull Requests (20 most recently updated open items).
 - Activity event links now deep-link to stars, releases, forks, and commits when available.
 - Recent activity now includes action/number labels, repo targets, and avatar icons.
 - Activity row now shows the latest activity timestamp aligned to the right.

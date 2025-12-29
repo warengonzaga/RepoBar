@@ -725,6 +725,42 @@ public actor GitHubClient {
         return pulls.count
     }
 
+    // MARK: - Recent PRs & issues (repo submenus)
+
+    public func recentPullRequests(owner: String, name: String, limit: Int = 20) async throws -> [RepoPullRequestSummary] {
+        let token = try await validAccessToken()
+        let limit = max(1, min(limit, 100))
+        var components = URLComponents(
+            url: apiHost.appending(path: "/repos/\(owner)/\(name)/pulls"),
+            resolvingAgainstBaseURL: false
+        )!
+        components.queryItems = [
+            URLQueryItem(name: "state", value: "open"),
+            URLQueryItem(name: "sort", value: "updated"),
+            URLQueryItem(name: "direction", value: "desc"),
+            URLQueryItem(name: "per_page", value: "\(limit)")
+        ]
+        let (data, _) = try await authorizedGet(url: components.url!, token: token)
+        return try Self.decodeRecentPullRequests(from: data)
+    }
+
+    public func recentIssues(owner: String, name: String, limit: Int = 20) async throws -> [RepoIssueSummary] {
+        let token = try await validAccessToken()
+        let limit = max(1, min(limit, 100))
+        var components = URLComponents(
+            url: apiHost.appending(path: "/repos/\(owner)/\(name)/issues"),
+            resolvingAgainstBaseURL: false
+        )!
+        components.queryItems = [
+            URLQueryItem(name: "state", value: "open"),
+            URLQueryItem(name: "sort", value: "updated"),
+            URLQueryItem(name: "direction", value: "desc"),
+            URLQueryItem(name: "per_page", value: "\(limit)")
+        ]
+        let (data, _) = try await authorizedGet(url: components.url!, token: token)
+        return try Self.decodeRecentIssues(from: data)
+    }
+
     /// Most recent release (including prereleases) ordered by creation date; skips drafts.
     /// Returns `nil` if the repository has no releases.
     private func latestReleaseAny(owner: String, name: String) async throws -> Release? {
@@ -738,6 +774,76 @@ public actor GitHubClient {
         guard response.statusCode != 404 else { throw URLError(.fileDoesNotExist) }
         let releases = try jsonDecoder.decode([ReleaseResponse].self, from: data)
         return Self.latestRelease(from: releases)
+    }
+
+    static func decodeRecentPullRequests(from data: Data) throws -> [RepoPullRequestSummary] {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let responses = try decoder.decode([PullRequestRecentResponse].self, from: data)
+        return responses.map {
+            RepoPullRequestSummary(
+                number: $0.number,
+                title: $0.title,
+                url: $0.htmlUrl,
+                updatedAt: $0.updatedAt,
+                authorLogin: $0.user?.login,
+                isDraft: $0.draft ?? false
+            )
+        }
+    }
+
+    static func decodeRecentIssues(from data: Data) throws -> [RepoIssueSummary] {
+        let decoder = JSONDecoder()
+        decoder.dateDecodingStrategy = .iso8601
+        let responses = try decoder.decode([IssueRecentResponse].self, from: data)
+        return responses
+            .filter { $0.pullRequest == nil }
+            .map {
+                RepoIssueSummary(
+                    number: $0.number,
+                    title: $0.title,
+                    url: $0.htmlUrl,
+                    updatedAt: $0.updatedAt,
+                    authorLogin: $0.user?.login
+                )
+            }
+    }
+
+    private struct PullRequestRecentResponse: Decodable {
+        let number: Int
+        let title: String
+        let htmlUrl: URL
+        let updatedAt: Date
+        let user: RecentUser?
+        let draft: Bool?
+
+        enum CodingKeys: String, CodingKey {
+            case number, title, user, draft
+            case htmlUrl = "html_url"
+            case updatedAt = "updated_at"
+        }
+    }
+
+    private struct IssueRecentResponse: Decodable {
+        let number: Int
+        let title: String
+        let htmlUrl: URL
+        let updatedAt: Date
+        let user: RecentUser?
+        let pullRequest: PullRequestMarker?
+
+        enum CodingKeys: String, CodingKey {
+            case number, title, user
+            case htmlUrl = "html_url"
+            case updatedAt = "updated_at"
+            case pullRequest = "pull_request"
+        }
+    }
+
+    private struct PullRequestMarker: Decodable {}
+
+    private struct RecentUser: Decodable {
+        let login: String
     }
 
     /// Pick the newest non-draft release, preferring publishedAt over createdAt.
@@ -798,7 +904,7 @@ public actor GitHubClient {
             let retryAfter = self.retryAfterDate(from: response) ?? Date().addingTimeInterval(90)
             await self.backoff.setCooldown(url: response.url ?? url, until: retryAfter)
             let retryText = RelativeFormatter.string(from: retryAfter, relativeTo: Date())
-            let message = "GitHub is preparing stats; retry \(retryText)."
+            let message = "GitHub is preparing repository stats (can take a few minutes); retry \(retryText)."
             await self.diag.message("202 for \(url.lastPathComponent); cooldown until \(retryAfter)")
             throw GitHubAPIError.serviceUnavailable(
                 retryAfter: retryAfter,

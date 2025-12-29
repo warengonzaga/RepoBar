@@ -148,18 +148,24 @@ final class StatusBarMenuBuilder {
             represented: repo.title,
             systemImage: "folder"
         ))
-        menu.addItem(self.actionItem(
-            title: "Open Issues",
-            action: #selector(self.target.openIssues),
-            represented: repo.title,
-            systemImage: "exclamationmark.circle"
+
+        menu.addItem(self.recentListSubmenuItem(
+            title: "Issues",
+            systemImage: "exclamationmark.circle",
+            fullName: repo.title,
+            kind: .issues,
+            openTitle: "Open Issues",
+            openAction: #selector(self.target.openIssues)
         ))
-        menu.addItem(self.actionItem(
-            title: "Open Pull Requests",
-            action: #selector(self.target.openPulls),
-            represented: repo.title,
-            systemImage: "arrow.triangle.branch"
+        menu.addItem(self.recentListSubmenuItem(
+            title: "Pull Requests",
+            systemImage: "arrow.triangle.branch",
+            fullName: repo.title,
+            kind: .pullRequests,
+            openTitle: "Open Pull Requests",
+            openAction: #selector(self.target.openPulls)
         ))
+
         menu.addItem(self.actionItem(
             title: "Open Actions",
             action: #selector(self.target.openActions),
@@ -279,6 +285,40 @@ final class StatusBarMenuBuilder {
 
         self.refreshMenuViewHeights(in: menu)
         return menu
+    }
+
+    private func recentListSubmenuItem(
+        title: String,
+        systemImage: String,
+        fullName: String,
+        kind: RepoRecentMenuKind,
+        openTitle: String,
+        openAction: Selector
+    ) -> NSMenuItem {
+        let submenu = NSMenu()
+        submenu.autoenablesItems = false
+        submenu.delegate = self.target
+        self.target.registerRecentListMenu(submenu, context: RepoRecentMenuContext(fullName: fullName, kind: kind))
+
+        submenu.addItem(self.actionItem(
+            title: openTitle,
+            action: openAction,
+            represented: fullName,
+            systemImage: systemImage
+        ))
+        submenu.addItem(.separator())
+        let loading = NSMenuItem(title: "Loading…", action: nil, keyEquivalent: "")
+        loading.isEnabled = false
+        submenu.addItem(loading)
+
+        let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
+        item.submenu = submenu
+        if let image = NSImage(systemSymbolName: systemImage, accessibilityDescription: nil) {
+            image.size = NSSize(width: 14, height: 14)
+            image.isTemplate = true
+            item.image = image
+        }
+        return item
     }
 
     func refreshMenuViewHeights(in menu: NSMenu) {
