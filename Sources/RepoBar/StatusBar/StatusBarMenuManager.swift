@@ -9,7 +9,7 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
     private var mainMenu: NSMenu?
     private lazy var menuBuilder = StatusBarMenuBuilder(appState: self.appState, target: self)
     private var recentListMenuContexts: [ObjectIdentifier: RepoRecentMenuContext] = [:]
-    private var menuResizeObserver: NSObjectProtocol?
+    private weak var menuResizeWindow: NSWindow?
 
     private let recentListLimit = 20
     private let recentListCacheTTL: TimeInterval = 90
@@ -239,21 +239,25 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
     private func startObservingMenuResize(for menu: NSMenu) {
         self.stopObservingMenuResize()
         guard let window = menu.items.compactMap(\.view).first?.window else { return }
-        self.menuResizeObserver = NotificationCenter.default.addObserver(
-            forName: NSWindow.didResizeNotification,
-            object: window,
-            queue: .main
-        ) { [weak self, weak menu] _ in
-            guard let self, let menu else { return }
-            self.menuBuilder.refreshMenuViewHeights(in: menu)
-            menu.update()
-        }
+        self.menuResizeWindow = window
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(self.menuWindowDidResize(_:)),
+            name: NSWindow.didResizeNotification,
+            object: window
+        )
     }
 
     private func stopObservingMenuResize() {
-        guard let observer = self.menuResizeObserver else { return }
-        NotificationCenter.default.removeObserver(observer)
-        self.menuResizeObserver = nil
+        guard let window = self.menuResizeWindow else { return }
+        NotificationCenter.default.removeObserver(self, name: NSWindow.didResizeNotification, object: window)
+        self.menuResizeWindow = nil
+    }
+
+    @objc private func menuWindowDidResize(_: Notification) {
+        guard let menu = self.mainMenu else { return }
+        self.menuBuilder.refreshMenuViewHeights(in: menu)
+        menu.update()
     }
 
     // MARK: - Main menu
