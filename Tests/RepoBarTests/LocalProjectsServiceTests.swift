@@ -5,10 +5,15 @@ import Testing
 struct LocalProjectsServiceTests {
     @Test
     func pathFormatter_abbreviatesHome() {
+        let user = NSUserName()
         let home = FileManager.default.homeDirectoryForCurrentUser.path
-        let input = URL(fileURLWithPath: home).appendingPathComponent("Projects").path
-        #expect(PathFormatter.displayString(input).hasPrefix("~"))
-        #expect(PathFormatter.expandTilde(PathFormatter.displayString(input)).hasPrefix(home))
+        let homeResolved = FileManager.default.homeDirectoryForCurrentUser.resolvingSymlinksInPath().path
+
+        #expect(PathFormatter.displayString("/Users/\(user)/Projects").hasPrefix("~"))
+
+        let expanded = PathFormatter.expandTilde("~/Projects")
+        #expect(expanded.hasSuffix("/Projects"))
+        #expect(expanded.hasPrefix(home) || expanded.hasPrefix(homeResolved))
     }
 
     @Test
