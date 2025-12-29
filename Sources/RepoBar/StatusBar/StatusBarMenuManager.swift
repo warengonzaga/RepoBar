@@ -9,6 +9,7 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
     private var mainMenu: NSMenu?
     private lazy var menuBuilder = StatusBarMenuBuilder(appState: self.appState, target: self)
     private var recentListMenuContexts: [ObjectIdentifier: RepoRecentMenuContext] = [:]
+    private var menuResizeObserver: NSObjectProtocol?
 
     private let recentListLimit = 20
     private let recentListCacheTTL: TimeInterval = 90
@@ -210,6 +211,7 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
                 self.menuBuilder.refreshMenuViewHeights(in: menu)
                 menu.update()
                 self.menuBuilder.clearHighlights(in: menu)
+                self.startObservingMenuResize(for: menu)
             }
         } else if let fullName = menu.items.first?.representedObject as? String,
                   fullName.contains("/")
@@ -222,6 +224,7 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
     func menuDidClose(_ menu: NSMenu) {
         if menu === self.mainMenu {
             self.menuBuilder.clearHighlights(in: menu)
+            self.stopObservingMenuResize()
         }
     }
 
@@ -231,6 +234,26 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
             let highlighted = menuItem == item && menuItem.isEnabled
             view.setHighlighted(highlighted)
         }
+    }
+
+    private func startObservingMenuResize(for menu: NSMenu) {
+        self.stopObservingMenuResize()
+        guard let window = menu.items.compactMap(\.view).first?.window else { return }
+        self.menuResizeObserver = NotificationCenter.default.addObserver(
+            forName: NSWindow.didResizeNotification,
+            object: window,
+            queue: .main
+        ) { [weak self, weak menu] _ in
+            guard let self, let menu else { return }
+            self.menuBuilder.refreshMenuViewHeights(in: menu)
+            menu.update()
+        }
+    }
+
+    private func stopObservingMenuResize() {
+        guard let observer = self.menuResizeObserver else { return }
+        NotificationCenter.default.removeObserver(observer)
+        self.menuResizeObserver = nil
     }
 
     // MARK: - Main menu

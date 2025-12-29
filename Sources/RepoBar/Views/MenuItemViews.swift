@@ -28,7 +28,7 @@ struct RepoMenuCardView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
             if self.showsSeparator {
                 Rectangle()
-                    .fill(Color(nsColor: .separatorColor))
+                    .fill(self.separatorColor)
                     .frame(height: 1)
                     .padding(.leading, MenuStyle.cardSeparatorInset)
                     .padding(.vertical, MenuStyle.cardSeparatorVerticalPadding)
@@ -162,6 +162,13 @@ struct RepoMenuCardView: View {
     }
 
     private var verticalSpacing: CGFloat { MenuStyle.cardSpacing }
+
+    private var separatorColor: Color {
+        if self.isHighlighted {
+            return MenuHighlightStyle.selectionText.opacity(0.25)
+        }
+        return Color(nsColor: .separatorColor)
+    }
 
     private var isLightAppearance: Bool {
         NSApp.effectiveAppearance.bestMatch(from: [.aqua, .darkAqua]) == .aqua
