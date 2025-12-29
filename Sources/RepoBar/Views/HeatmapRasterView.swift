@@ -97,14 +97,14 @@ final class HeatmapRasterNSView: NSView {
         self.renderGeneration = generation
         self.renderTask?.cancel()
 
-        let boundsSize = CGSize(width: floor(self.bounds.width), height: floor(self.bounds.height))
         let scale = max(self.window?.backingScaleFactor ?? 2, 1)
-        let widthPx = max(Int(boundsSize.width * scale), 1)
-        let heightPx = max(Int(boundsSize.height * scale), 1)
+        let widthPx = max(Int((self.bounds.width * scale).rounded(.toNearestOrAwayFromZero)), 1)
+        let heightPx = max(Int((self.bounds.height * scale).rounded(.toNearestOrAwayFromZero)), 1)
+        let boundsSize = CGSize(width: CGFloat(widthPx) / scale, height: CGFloat(heightPx) / scale)
 
         let columns = HeatmapLayout.columnCount(cellCount: self.cells.count)
         let cellSide = HeatmapLayout.cellSide(forHeight: boundsSize.height, width: boundsSize.width, columns: columns)
-        let xSpacing = Self.xSpacing(availableWidth: boundsSize.width, columns: columns, cellSide: cellSide)
+        let xSpacing = Self.xSpacing(availableWidth: boundsSize.width, columns: columns, cellSide: cellSide, scale: scale)
         let contentWidth = Self.contentWidth(columns: columns, cellSide: cellSide, xSpacing: xSpacing)
         let xOffset = Self.balancedInset(
             availableWidth: boundsSize.width,
@@ -272,12 +272,12 @@ final class HeatmapRasterNSView: NSView {
         return (palette, hash)
     }
 
-    private static func xSpacing(availableWidth: CGFloat, columns: Int, cellSide: CGFloat) -> CGFloat {
+    private static func xSpacing(availableWidth: CGFloat, columns: Int, cellSide: CGFloat, scale: CGFloat) -> CGFloat {
         guard columns > 1 else { return 0 }
 
         let base = HeatmapLayout.spacing
         let ideal = (availableWidth - CGFloat(columns) * cellSide) / CGFloat(columns - 1)
-        return max(base, ideal)
+        return Self.snapToPixel(max(base, ideal), scale: scale)
     }
 
     private static func contentWidth(columns: Int, cellSide: CGFloat, xSpacing: CGFloat) -> CGFloat {
@@ -293,7 +293,7 @@ final class HeatmapRasterNSView: NSView {
         contentWidth: CGFloat,
         scale: CGFloat
     ) -> CGFloat {
-        guard availableWidth > contentWidth, columns > 0 else { return 0 }
+        guard availableWidth >= contentWidth, columns > 0 else { return 0 }
 
         let stepX = cellSide + xSpacing
         let ideal = (availableWidth - contentWidth) / 2
