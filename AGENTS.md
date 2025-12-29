@@ -11,6 +11,7 @@
 - `pnpm test` → `swift test`; add `--filter` for focused runs.
 - `pnpm build` → `swift build` (debug).
 - `pnpm start` → `Scripts/compile_and_run.sh` launches the menubar app; quit via `pnpm stop` or the menu. `pnpm restart` is available.
+- Guardrail: always launch via `pnpm start`/`pnpm restart` from `~/Projects/RepoBar` (other checkouts under `/private/tmp/...` can look identical in the menubar). If behavior/UI doesn’t match code, verify the running binary path: `pgrep -af "RepoBar.app/Contents/MacOS/RepoBar"`.
 - `pnpm codegen` only after GraphQL schema access is configured; leaves outputs in `Sources/RepoBar/API/Generated`.
 - Preferred workflow: after any code change run `Scripts/compile_and_run.sh` (via `pnpm start`/`pnpm restart`) to rebuild, test, codesign the debug app, and relaunch so you never run a stale bundle.
 

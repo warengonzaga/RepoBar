@@ -50,6 +50,7 @@ fi
 
 log "==> Launching debug build"
 APP_BUNDLE="${ROOT_DIR}/.build/debug/${APP_NAME}.app"
+EXPECTED_PROCESS="${APP_BUNDLE}/Contents/MacOS/${APP_NAME}"
 if [ -d "${APP_BUNDLE}" ]; then
   # Launch via LaunchServices so the process has a proper bundle identifier (menubar item, single-instance, URL handlers).
   open -n -g "${APP_BUNDLE}"
@@ -58,6 +59,23 @@ else
 fi
 
 sleep 1
+
+if [ -d "${APP_BUNDLE}" ]; then
+  for _ in {1..10}; do
+    if pgrep -f "${EXPECTED_PROCESS}" >/dev/null 2>&1; then
+      break
+    fi
+    sleep 0.2
+  done
+
+  if ! pgrep -f "${EXPECTED_PROCESS}" >/dev/null 2>&1; then
+    log "ERROR: ${APP_NAME} did not launch from this checkout."
+    log "Hint: another RepoBar build may be running from a different path; run:"
+    log "  pgrep -af \"${APP_PROCESS_PATTERN}\""
+    exit 1
+  fi
+fi
+
 if pgrep -f "${APP_PROCESS_PATTERN}" >/dev/null 2>&1 || pgrep -x "${APP_NAME}" >/dev/null 2>&1; then
   log "OK: ${APP_NAME} is running."
 else
