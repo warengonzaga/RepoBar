@@ -1,5 +1,4 @@
 import AppKit
-@preconcurrency import Dispatch
 import QuartzCore
 import RepoBarCore
 import SwiftUI
@@ -19,7 +18,6 @@ struct HeatmapRasterView: NSViewRepresentable {
 }
 
 final class HeatmapRasterNSView: NSView {
-    private static let renderQueue = DispatchQueue(label: "repobar.heatmap.render", qos: .userInitiated)
     private static let imageCache: NSCache<NSString, CGImage> = {
         let cache = NSCache<NSString, CGImage>()
         cache.totalCostLimit = 64 * 1024 * 1024
@@ -48,7 +46,7 @@ final class HeatmapRasterNSView: NSView {
     private var lastAppliedRenderKey: String?
     private var lastAppliedScale: CGFloat = 0
     private var renderGeneration: UInt64 = 0
-    private var inflightWorkItem: DispatchWorkItem?
+    private var renderTask: Task<Void, Never>?
 
     override init(frame frameRect: NSRect) {
         super.init(frame: frameRect)
@@ -60,6 +58,10 @@ final class HeatmapRasterNSView: NSView {
     @available(*, unavailable)
     required init?(coder _: NSCoder) {
         fatalError("init(coder:) has not been implemented")
+    }
+
+    deinit {
+        self.renderTask?.cancel()
     }
 
     func update(cells: [HeatmapCell], accentTone: AccentTone, isHighlighted: Bool) {
@@ -91,7 +93,7 @@ final class HeatmapRasterNSView: NSView {
 
         let generation = self.renderGeneration &+ 1
         self.renderGeneration = generation
-        self.inflightWorkItem?.cancel()
+        self.renderTask?.cancel()
 
         let boundsSize = CGSize(width: floor(self.bounds.width), height: floor(self.bounds.height))
         let columns = HeatmapLayout.columnCount(cellCount: self.cells.count)
@@ -139,19 +141,19 @@ final class HeatmapRasterNSView: NSView {
             cornerRadius: cornerRadius
         )
 
-        let work = DispatchWorkItem { [weak self] in
-            guard let image = payload.renderImage() else { return }
-            DispatchQueue.main.async { [weak self] in
-                guard let self else { return }
-                guard self.renderGeneration == generation else { return }
-                let cost = payload.cost
-                Self.imageCache.setObject(image, forKey: renderKey as NSString, cost: cost)
-                self.apply(image: image, renderKey: renderKey, scale: scale)
-            }
-        }
+        self.renderTask = Task { [weak self, payload, renderKey, scale, generation] in
+            if Task.isCancelled { return }
+            let imageTask = Task.detached(priority: .userInitiated) { payload.renderImage() }
+            let image = await imageTask.value
+            if Task.isCancelled { return }
+            guard let self else { return }
+            guard self.renderGeneration == generation else { return }
+            guard let image else { return }
 
-        self.inflightWorkItem = work
-        Self.renderQueue.async(execute: work)
+            let cost = payload.cost
+            Self.imageCache.setObject(image, forKey: renderKey as NSString, cost: cost)
+            self.apply(image: image, renderKey: renderKey, scale: scale)
+        }
     }
 
     private func apply(image: CGImage, renderKey: String, scale: CGFloat) {
