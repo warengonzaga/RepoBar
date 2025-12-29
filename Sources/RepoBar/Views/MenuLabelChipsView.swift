@@ -1,3 +1,4 @@
+import AppKit
 import RepoBarCore
 import SwiftUI
 
@@ -17,35 +18,50 @@ struct MenuLabelChipsView: View {
 private struct MenuLabelChipView: View {
     let label: RepoIssueLabel
     let isHighlighted: Bool
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
-        let base = MenuLabelColor.color(from: self.label.colorHex) ?? Color(nsColor: .separatorColor)
+        let base = MenuLabelColor.nsColor(from: self.label.colorHex) ?? .separatorColor
+        let baseColor = Color(nsColor: base)
 
-        Text(self.label.name)
-            .font(.caption2.weight(.semibold))
-            .lineLimit(1)
-            .foregroundStyle(self.isHighlighted ? .white.opacity(0.95) : base.opacity(0.95))
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .fill(self.isHighlighted ? .white.opacity(0.18) : base.opacity(0.18))
-            )
-            .overlay(
-                RoundedRectangle(cornerRadius: 6, style: .continuous)
-                    .stroke(self.isHighlighted ? .white.opacity(0.35) : base.opacity(0.45), lineWidth: 1)
-            )
+        let fillOpacity: CGFloat = self.colorScheme == .dark ? 0.16 : 0.10
+        let strokeOpacity: CGFloat = self.colorScheme == .dark ? 0.45 : 0.60
+
+        let fill = self.isHighlighted ? .white.opacity(0.16) : baseColor.opacity(fillOpacity)
+        let stroke = self.isHighlighted ? .white.opacity(0.30) : baseColor.opacity(strokeOpacity)
+        let dot = self.isHighlighted ? .white.opacity(0.85) : baseColor
+        let text = self.isHighlighted ? Color.white.opacity(0.95) : Color.primary.opacity(0.92)
+
+        HStack(spacing: 5) {
+            Circle()
+                .fill(dot)
+                .frame(width: 6, height: 6)
+            Text(self.label.name)
+                .font(.caption2.weight(.semibold))
+                .foregroundStyle(text)
+                .lineLimit(1)
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2)
+        .background(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .fill(fill)
+        )
+        .overlay(
+            RoundedRectangle(cornerRadius: 6, style: .continuous)
+                .stroke(stroke, lineWidth: 1)
+        )
     }
 }
 
 private enum MenuLabelColor {
-    static func color(from hex: String) -> Color? {
+    static func nsColor(from hex: String) -> NSColor? {
         let cleaned = hex.trimmingCharacters(in: CharacterSet(charactersIn: "#"))
         guard cleaned.count == 6, let value = Int(cleaned, radix: 16) else { return nil }
         let r = Double((value >> 16) & 0xFF) / 255.0
         let g = Double((value >> 8) & 0xFF) / 255.0
         let b = Double(value & 0xFF) / 255.0
-        return Color(red: r, green: g, blue: b)
+        return NSColor(calibratedRed: r, green: g, blue: b, alpha: 1)
     }
 }
 

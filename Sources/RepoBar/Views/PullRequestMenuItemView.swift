@@ -59,7 +59,8 @@ struct PullRequestMenuItemView: View {
                 if let head = self.pullRequest.headRefName,
                    let base = self.pullRequest.baseRefName,
                    head.isEmpty == false,
-                   base.isEmpty == false {
+                   base.isEmpty == false
+                {
                     Text("\(head) → \(base)")
                         .font(.caption2)
                         .monospaced()

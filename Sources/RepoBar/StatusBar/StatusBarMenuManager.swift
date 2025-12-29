@@ -324,14 +324,15 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
         menu.removeAllItems()
 
         let open = NSMenuItem(title: header.title, action: header.action, keyEquivalent: "")
-	        open.target = self
-	        open.representedObject = header.fullName
-	        if let systemImage = header.systemImage,
-	           let image = NSImage(systemSymbolName: systemImage, accessibilityDescription: nil) {
-	            image.size = NSSize(width: 14, height: 14)
-	            image.isTemplate = true
-	            open.image = image
-	        }
+        open.target = self
+        open.representedObject = header.fullName
+        if let systemImage = header.systemImage,
+           let image = NSImage(systemSymbolName: systemImage, accessibilityDescription: nil)
+        {
+            image.size = NSSize(width: 14, height: 14)
+            image.isTemplate = true
+            open.image = image
+        }
         open.isEnabled = header.action != nil
         menu.addItem(open)
 
