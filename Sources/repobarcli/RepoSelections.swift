@@ -15,9 +15,9 @@ enum RepoScopeSelection: String, CaseIterable, ExpressibleFromArgument, Sendable
 extension RepoScopeSelection {
     var repositoryScope: RepositoryScope {
         switch self {
-        case .all: return .all
-        case .pinned: return .pinned
-        case .hidden: return .hidden
+        case .all: .all
+        case .pinned: .pinned
+        case .hidden: .hidden
         }
     }
 }
@@ -47,13 +47,13 @@ enum RepoFilterSelection: String, CaseIterable, ExpressibleFromArgument, Sendabl
     var onlyWith: RepositoryOnlyWith {
         switch self {
         case .all:
-            return .none
+            .none
         case .work:
-            return RepositoryOnlyWith(requireIssues: true, requirePRs: true)
+            RepositoryOnlyWith(requireIssues: true, requirePRs: true)
         case .issues:
-            return RepositoryOnlyWith(requireIssues: true)
+            RepositoryOnlyWith(requireIssues: true)
         case .prs:
-            return RepositoryOnlyWith(requirePRs: true)
+            RepositoryOnlyWith(requirePRs: true)
         }
     }
 }

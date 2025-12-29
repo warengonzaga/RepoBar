@@ -78,7 +78,7 @@ struct RepositoryDisplayModel: Identifiable, Equatable {
             Stat(id: "issues", label: "Issues", value: repo.stats.openIssues, systemImage: "exclamationmark.circle"),
             Stat(id: "prs", label: "PRs", value: repo.stats.openPulls, systemImage: "arrow.triangle.branch"),
             Stat(id: "stars", label: nil, value: repo.stats.stars, systemImage: "star"),
-            Stat(id: "forks", label: "Forks", value: repo.stats.forks, systemImage: "tuningfork"),
+            Stat(id: "forks", label: "Forks", value: repo.stats.forks, systemImage: "tuningfork")
         ]
     }
 }

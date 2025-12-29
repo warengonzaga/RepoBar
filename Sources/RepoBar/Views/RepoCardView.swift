@@ -1,6 +1,6 @@
+import AppKit
 import RepoBarCore
 import SwiftUI
-import AppKit
 
 struct RepoCardView: View {
     let repo: RepositoryDisplayModel

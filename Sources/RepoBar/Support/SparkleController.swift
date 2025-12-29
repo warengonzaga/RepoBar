@@ -48,7 +48,7 @@ final class SparkleController: NSObject {
     let updateStatus: UpdateStatus
     private let defaultsKey = "autoUpdateEnabled"
 
-    private override init() {
+    override private init() {
         #if canImport(Sparkle)
             let bundleURL = Bundle.main.bundleURL
             let isBundledApp = bundleURL.pathExtension == "app"
@@ -113,44 +113,44 @@ final class SparkleController: NSObject {
 }
 
 #if canImport(Sparkle)
-import Sparkle
+    import Sparkle
 
-extension SparkleController: SPUUpdaterDelegate {
-    nonisolated func updater(_ updater: SPUUpdater, didDownloadUpdate item: SUAppcastItem) {
-        Task { @MainActor in
-            self.updateStatus.isUpdateReady = true
+    extension SparkleController: SPUUpdaterDelegate {
+        nonisolated func updater(_: SPUUpdater, didDownloadUpdate _: SUAppcastItem) {
+            Task { @MainActor in
+                self.updateStatus.isUpdateReady = true
+            }
         }
-    }
 
-    nonisolated func updater(_ updater: SPUUpdater, failedToDownloadUpdate item: SUAppcastItem, error: Error) {
-        Task { @MainActor in
-            self.updateStatus.isUpdateReady = false
-        }
-    }
-
-    nonisolated func userDidCancelDownload(_ updater: SPUUpdater) {
-        Task { @MainActor in
-            self.updateStatus.isUpdateReady = false
-        }
-    }
-
-    nonisolated func updater(
-        _ updater: SPUUpdater,
-        userDidMake choice: SPUUserUpdateChoice,
-        forUpdate updateItem: SUAppcastItem,
-        state: SPUUserUpdateState
-    ) {
-        let downloaded = state.stage == .downloaded
-        Task { @MainActor in
-            switch choice {
-            case .install, .skip:
-                self.updateStatus.isUpdateReady = false
-            case .dismiss:
-                self.updateStatus.isUpdateReady = downloaded
-            @unknown default:
+        nonisolated func updater(_: SPUUpdater, failedToDownloadUpdate _: SUAppcastItem, error _: Error) {
+            Task { @MainActor in
                 self.updateStatus.isUpdateReady = false
             }
         }
+
+        nonisolated func userDidCancelDownload(_: SPUUpdater) {
+            Task { @MainActor in
+                self.updateStatus.isUpdateReady = false
+            }
+        }
+
+        nonisolated func updater(
+            _: SPUUpdater,
+            userDidMake choice: SPUUserUpdateChoice,
+            forUpdate _: SUAppcastItem,
+            state: SPUUserUpdateState
+        ) {
+            let downloaded = state.stage == .downloaded
+            Task { @MainActor in
+                switch choice {
+                case .install, .skip:
+                    self.updateStatus.isUpdateReady = false
+                case .dismiss:
+                    self.updateStatus.isUpdateReady = downloaded
+                @unknown default:
+                    self.updateStatus.isUpdateReady = false
+                }
+            }
+        }
     }
-}
 #endif

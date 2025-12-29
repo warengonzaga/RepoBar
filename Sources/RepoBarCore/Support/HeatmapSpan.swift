@@ -31,7 +31,7 @@ public struct HeatmapRange: Equatable, Codable, Sendable {
 public enum HeatmapFilter {
     public static func filter(_ cells: [HeatmapCell], span: HeatmapSpan, now: Date = Date()) -> [HeatmapCell] {
         let range = range(span: span, now: now, alignToWeek: false)
-        return filter(cells, range: range)
+        return self.filter(cells, range: range)
     }
 
     public static func alignedRange(
@@ -64,7 +64,7 @@ public enum HeatmapFilter {
             let start = calendar.date(byAdding: .month, value: -span.months, to: end) ?? end
             return HeatmapRange(start: start, end: end)
         }
-        return alignedRange(span: span, now: now, calendar: calendar)
+        return self.alignedRange(span: span, now: now, calendar: calendar)
     }
 
     public static func filter(_ cells: [HeatmapCell], range: HeatmapRange) -> [HeatmapCell] {
@@ -78,6 +78,6 @@ public enum HeatmapFilter {
         alignToWeek: Bool
     ) -> [HeatmapCell] {
         let range = range(span: span, now: now, alignToWeek: alignToWeek)
-        return filter(cells, range: range)
+        return self.filter(cells, range: range)
     }
 }

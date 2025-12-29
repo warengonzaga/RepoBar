@@ -472,7 +472,6 @@ final class AppState {
             }
         }
     }
-
 }
 
 @Observable
@@ -504,7 +503,7 @@ private extension Array {
         var index = startIndex
         while index < endIndex {
             let nextIndex = self.index(index, offsetBy: size, limitedBy: endIndex) ?? endIndex
-            result.append(self[index..<nextIndex])
+            result.append(self[index ..< nextIndex])
             index = nextIndex
         }
         return result

@@ -180,7 +180,6 @@ struct MenuStatBadge: View {
         }
         .foregroundStyle(MenuHighlightStyle.secondary(self.isHighlighted))
     }
-
 }
 
 struct MenuPaddedSeparatorView: View {
@@ -308,7 +307,6 @@ struct MenuCIBadge: View {
         return Color(nsColor: adjusted)
     }
 }
-
 
 struct MenuLoggedOutView: View {
     var body: some View {

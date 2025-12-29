@@ -218,69 +218,69 @@ struct GeneralSettingsView: View {
         VStack(spacing: 12) {
             Form {
                 Section {
-                Toggle("Launch at login", isOn: self.$session.settings.launchAtLogin)
-                    .onChange(of: self.session.settings.launchAtLogin) { _, value in
-                        LaunchAtLoginHelper.set(enabled: value)
-                        self.appState.persistSettings()
-                    }
+                    Toggle("Launch at login", isOn: self.$session.settings.launchAtLogin)
+                        .onChange(of: self.session.settings.launchAtLogin) { _, value in
+                            LaunchAtLoginHelper.set(enabled: value)
+                            self.appState.persistSettings()
+                        }
                 } footer: {
-                Text("Automatically opens RepoBar when you start your Mac.")
+                    Text("Automatically opens RepoBar when you start your Mac.")
                 }
 
                 Section {
-                Toggle("Show contribution header", isOn: self.$session.settings.appearance.showContributionHeader)
-                    .onChange(of: self.session.settings.appearance.showContributionHeader) { _, _ in
+                    Toggle("Show contribution header", isOn: self.$session.settings.appearance.showContributionHeader)
+                        .onChange(of: self.session.settings.appearance.showContributionHeader) { _, _ in
+                            self.appState.persistSettings()
+                        }
+                    Picker("Repository heatmap", selection: self.$session.settings.heatmap.display) {
+                        ForEach(HeatmapDisplay.allCases, id: \.self) { display in
+                            Text(display.label).tag(display)
+                        }
+                    }
+                    .onChange(of: self.session.settings.heatmap.display) { _, _ in
                         self.appState.persistSettings()
                     }
-                Picker("Repository heatmap", selection: self.$session.settings.heatmap.display) {
-                    ForEach(HeatmapDisplay.allCases, id: \.self) { display in
-                        Text(display.label).tag(display)
+                    Picker("Heatmap window", selection: self.$session.settings.heatmap.span) {
+                        ForEach(HeatmapSpan.allCases, id: \.self) { span in
+                            Text(span.label).tag(span)
+                        }
                     }
-                }
-                .onChange(of: self.session.settings.heatmap.display) { _, _ in
-                    self.appState.persistSettings()
-                }
-                Picker("Heatmap window", selection: self.$session.settings.heatmap.span) {
-                    ForEach(HeatmapSpan.allCases, id: \.self) { span in
-                        Text(span.label).tag(span)
+                    .onChange(of: self.session.settings.heatmap.span) { _, _ in
+                        self.appState.persistSettings()
+                        self.appState.updateHeatmapRange(now: Date())
                     }
-                }
-                .onChange(of: self.session.settings.heatmap.span) { _, _ in
-                    self.appState.persistSettings()
-                    self.appState.updateHeatmapRange(now: Date())
-                }
                 } header: {
-                Text("Display")
+                    Text("Display")
                 } footer: {
-                Text("Repository heatmaps show recent commit activity for each repository.")
+                    Text("Repository heatmaps show recent commit activity for each repository.")
                 }
 
                 Section {
-                Picker("Repositories shown", selection: self.$session.settings.repoList.displayLimit) {
-                    ForEach([3, 6, 9, 12], id: \.self) { Text("\($0)").tag($0) }
-                }
-                Picker("Menu sort", selection: self.$session.settings.repoList.menuSortKey) {
-                    ForEach(RepositorySortKey.settingsCases, id: \.self) { sortKey in
-                        Text(sortKey.settingsLabel).tag(sortKey)
+                    Picker("Repositories shown", selection: self.$session.settings.repoList.displayLimit) {
+                        ForEach([3, 6, 9, 12], id: \.self) { Text("\($0)").tag($0) }
                     }
-                }
-                .onChange(of: self.session.settings.repoList.menuSortKey) { _, _ in
-                    self.appState.persistSettings()
-                }
-                Toggle("Include forked repositories", isOn: self.$session.settings.repoList.showForks)
-                    .onChange(of: self.session.settings.repoList.showForks) { _, _ in
+                    Picker("Menu sort", selection: self.$session.settings.repoList.menuSortKey) {
+                        ForEach(RepositorySortKey.settingsCases, id: \.self) { sortKey in
+                            Text(sortKey.settingsLabel).tag(sortKey)
+                        }
+                    }
+                    .onChange(of: self.session.settings.repoList.menuSortKey) { _, _ in
                         self.appState.persistSettings()
-                        self.appState.requestRefresh(cancelInFlight: true)
                     }
-                Toggle("Include archived repositories", isOn: self.$session.settings.repoList.showArchived)
-                    .onChange(of: self.session.settings.repoList.showArchived) { _, _ in
-                        self.appState.persistSettings()
-                        self.appState.requestRefresh(cancelInFlight: true)
-                    }
+                    Toggle("Include forked repositories", isOn: self.$session.settings.repoList.showForks)
+                        .onChange(of: self.session.settings.repoList.showForks) { _, _ in
+                            self.appState.persistSettings()
+                            self.appState.requestRefresh(cancelInFlight: true)
+                        }
+                    Toggle("Include archived repositories", isOn: self.$session.settings.repoList.showArchived)
+                        .onChange(of: self.session.settings.repoList.showArchived) { _, _ in
+                            self.appState.persistSettings()
+                            self.appState.requestRefresh(cancelInFlight: true)
+                        }
                 } header: {
-                Text("Repositories")
+                    Text("Repositories")
                 } footer: {
-                Text("Filters apply to repo lists and search.")
+                    Text("Filters apply to repo lists and search.")
                 }
             }
             .formStyle(.grouped)

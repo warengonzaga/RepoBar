@@ -56,10 +56,10 @@ struct ContributionHeaderView: View {
 
     @ViewBuilder
     private var content: some View {
-        if !self.session.hasLoadedRepositories && !self.hasCachedHeatmap {
+        if !self.session.hasLoadedRepositories, !self.hasCachedHeatmap {
             ProgressView()
                 .frame(maxWidth: .infinity, minHeight: 44, maxHeight: 52, alignment: .center)
-        } else if self.isLoading && !self.hasCachedHeatmap {
+        } else if self.isLoading, !self.hasCachedHeatmap {
             ProgressView()
                 .frame(maxWidth: .infinity, minHeight: 44, maxHeight: 52, alignment: .center)
         } else if self.failed {
@@ -124,7 +124,7 @@ struct ContributionHeaderView: View {
     }
 
     private var placeholderOverlay: some View {
-            self.placeholder.overlay { ProgressView() }
+        self.placeholder.overlay { ProgressView() }
     }
 
     private var hasCachedHeatmap: Bool {

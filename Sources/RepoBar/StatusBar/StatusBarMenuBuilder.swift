@@ -17,7 +17,7 @@ final class StatusBarMenuBuilder {
     func makeMainMenu() -> NSMenu {
         let menu = NSMenu()
         menu.autoenablesItems = false
-        menu.delegate = target
+        menu.delegate = self.target
         menu.appearance = nil
         return menu
     }
@@ -37,9 +37,9 @@ final class StatusBarMenuBuilder {
                 session: session,
                 appState: self.appState
             )
-                .padding(.horizontal, MenuStyle.headerHorizontalPadding)
-                .padding(.top, MenuStyle.headerTopPadding)
-                .padding(.bottom, MenuStyle.headerBottomPadding)
+            .padding(.horizontal, MenuStyle.headerHorizontalPadding)
+            .padding(.top, MenuStyle.headerTopPadding)
+            .padding(.bottom, MenuStyle.headerBottomPadding)
             menu.addItem(self.viewItem(for: header, enabled: true, highlightable: true))
             menu.addItem(.separator())
         }
@@ -139,47 +139,54 @@ final class StatusBarMenuBuilder {
     func makeRepoSubmenu(for repo: RepositoryDisplayModel, isPinned: Bool) -> NSMenu {
         let menu = NSMenu()
         menu.autoenablesItems = false
-        menu.delegate = target
+        menu.delegate = self.target
         let settings = self.appState.session.settings
 
         menu.addItem(self.actionItem(
             title: "Open \(repo.title)",
             action: #selector(self.target.openRepo),
             represented: repo.title,
-            systemImage: "folder"))
+            systemImage: "folder"
+        ))
         menu.addItem(self.actionItem(
             title: "Open Issues",
             action: #selector(self.target.openIssues),
             represented: repo.title,
-            systemImage: "exclamationmark.circle"))
+            systemImage: "exclamationmark.circle"
+        ))
         menu.addItem(self.actionItem(
             title: "Open Pull Requests",
             action: #selector(self.target.openPulls),
             represented: repo.title,
-            systemImage: "arrow.triangle.branch"))
+            systemImage: "arrow.triangle.branch"
+        ))
         menu.addItem(self.actionItem(
             title: "Open Actions",
             action: #selector(self.target.openActions),
             represented: repo.title,
-            systemImage: "bolt"))
+            systemImage: "bolt"
+        ))
         menu.addItem(self.actionItem(
             title: "Open Releases",
             action: #selector(self.target.openReleases),
             represented: repo.title,
-            systemImage: "tag"))
+            systemImage: "tag"
+        ))
         if repo.source.latestRelease != nil {
             menu.addItem(self.actionItem(
                 title: "Open Latest Release",
                 action: #selector(self.target.openLatestRelease),
                 represented: repo.title,
-                systemImage: "tag.fill"))
+                systemImage: "tag.fill"
+            ))
         }
         if repo.activityURL != nil {
             menu.addItem(self.actionItem(
                 title: "Open Latest Activity",
                 action: #selector(self.target.openActivity),
                 represented: repo.title,
-                systemImage: "clock.arrow.circlepath"))
+                systemImage: "clock.arrow.circlepath"
+            ))
         }
 
         if settings.heatmap.display == .submenu, !repo.heatmap.isEmpty {
@@ -189,8 +196,8 @@ final class StatusBarMenuBuilder {
                 accentTone: settings.appearance.accentTone,
                 height: MenuStyle.heatmapSubmenuHeight
             )
-                .padding(.horizontal, MenuStyle.cardHorizontalPadding)
-                .padding(.vertical, MenuStyle.cardVerticalPadding)
+            .padding(.horizontal, MenuStyle.cardHorizontalPadding)
+            .padding(.vertical, MenuStyle.cardVerticalPadding)
             menu.addItem(.separator())
             menu.addItem(self.viewItem(for: heatmap, enabled: false))
         }
@@ -216,19 +223,22 @@ final class StatusBarMenuBuilder {
                 title: "Unpin",
                 action: #selector(self.target.unpinRepo),
                 represented: repo.title,
-                systemImage: "pin.slash"))
+                systemImage: "pin.slash"
+            ))
         } else {
             menu.addItem(self.actionItem(
                 title: "Pin",
                 action: #selector(self.target.pinRepo),
                 represented: repo.title,
-                systemImage: "pin"))
+                systemImage: "pin"
+            ))
         }
         menu.addItem(self.actionItem(
             title: "Hide",
             action: #selector(self.target.hideRepo),
             represented: repo.title,
-            systemImage: "eye.slash"))
+            systemImage: "eye.slash"
+        ))
 
         if isPinned {
             let pins = self.appState.session.settings.repoList.pinnedRepositories
@@ -237,13 +247,15 @@ final class StatusBarMenuBuilder {
                     title: "Move Up",
                     action: #selector(self.target.moveRepoUp),
                     represented: repo.title,
-                    systemImage: "arrow.up")
+                    systemImage: "arrow.up"
+                )
                 moveUp.isEnabled = index > 0
                 let moveDown = self.actionItem(
                     title: "Move Down",
                     action: #selector(self.target.moveRepoDown),
                     represented: repo.title,
-                    systemImage: "arrow.down")
+                    systemImage: "arrow.down"
+                )
                 moveDown.isEnabled = index < pins.count - 1
                 menu.addItem(.separator())
                 menu.addItem(moveUp)
@@ -367,8 +379,8 @@ final class StatusBarMenuBuilder {
         return item
     }
 
-    private func viewItem<Content: View>(
-        for content: Content,
+    private func viewItem(
+        for content: some View,
         enabled: Bool,
         highlightable: Bool = false,
         submenu: NSMenu? = nil

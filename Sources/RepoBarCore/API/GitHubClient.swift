@@ -930,7 +930,6 @@ public actor GitHubClient {
         }
         return nil
     }
-
 }
 
 private struct InstallationReposResponse: Decodable {

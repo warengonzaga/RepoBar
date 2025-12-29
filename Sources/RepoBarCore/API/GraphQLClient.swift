@@ -246,7 +246,8 @@ struct ContributionDay: Decodable {
             throw DecodingError.dataCorruptedError(
                 forKey: .date,
                 in: container,
-                debugDescription: "Unsupported date format: \(rawDate)")
+                debugDescription: "Unsupported date format: \(rawDate)"
+            )
         }
         self.date = parsedDate
         self.contributionCount = try container.decode(Int.self, forKey: .contributionCount)

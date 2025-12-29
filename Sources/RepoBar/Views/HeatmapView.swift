@@ -91,7 +91,6 @@ struct HeatmapView: View {
             ]
         }
     }
-
 }
 
 enum HeatmapLayout {
@@ -103,34 +102,34 @@ enum HeatmapLayout {
     static let maxCellSide: CGFloat = 10
 
     static func columnCount(cellCount: Int) -> Int {
-        let dataColumns = max(1, Int(ceil(Double(cellCount) / Double(rows))))
-        return max(dataColumns, minColumns)
+        let dataColumns = max(1, Int(ceil(Double(cellCount) / Double(self.rows))))
+        return max(dataColumns, self.minColumns)
     }
 
     static func cellSide(for height: CGFloat) -> CGFloat {
-        let totalSpacingY = CGFloat(rows - 1) * spacing
+        let totalSpacingY = CGFloat(rows - 1) * self.spacing
         let availableHeight = max(height - totalSpacingY, 0)
-        let side = availableHeight / CGFloat(rows)
-        return max(minCellSide, min(maxCellSide, floor(side)))
+        let side = availableHeight / CGFloat(self.rows)
+        return max(self.minCellSide, min(self.maxCellSide, floor(side)))
     }
 
     static func cellSide(forHeight height: CGFloat, width: CGFloat, columns: Int) -> CGFloat {
-        let heightSide = cellSide(for: height)
-        let totalSpacingX = CGFloat(max(columns - 1, 0)) * spacing
+        let heightSide = self.cellSide(for: height)
+        let totalSpacingX = CGFloat(max(columns - 1, 0)) * self.spacing
         let availableWidth = max(width - totalSpacingX, 0)
         let widthSide = availableWidth / CGFloat(max(columns, 1))
         let side = floor(min(heightSide, widthSide))
-        return max(minCellSide, min(maxCellSide, side))
+        return max(self.minCellSide, min(self.maxCellSide, side))
     }
 
     static func reshape(cells: [HeatmapCell], columns: Int) -> [[HeatmapCell]] {
         var padded = cells
-        if padded.count < columns * rows {
-            let missing = columns * rows - padded.count
+        if padded.count < columns * self.rows {
+            let missing = columns * self.rows - padded.count
             padded.append(contentsOf: Array(repeating: HeatmapCell(date: Date(), count: 0), count: missing))
         }
-        return stride(from: 0, to: padded.count, by: rows).map { index in
-            Array(padded[index ..< min(index + rows, padded.count)])
+        return stride(from: 0, to: padded.count, by: self.rows).map { index in
+            Array(padded[index ..< min(index + self.rows, padded.count)])
         }
     }
 }

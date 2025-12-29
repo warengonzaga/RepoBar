@@ -20,7 +20,7 @@ public struct SettingsStore {
             var settings = envelope.settings
             if envelope.version < Self.currentVersion {
                 Self.applyMigrations(to: &settings, fromVersion: envelope.version)
-                save(settings)
+                self.save(settings)
             }
             return settings
         }
@@ -34,8 +34,8 @@ public struct SettingsStore {
         }
     }
 
-    private static func applyMigrations(to settings: inout UserSettings, fromVersion: Int) {
-        guard fromVersion < currentVersion else { return }
+    private static func applyMigrations(to _: inout UserSettings, fromVersion: Int) {
+        guard fromVersion < self.currentVersion else { return }
     }
 }
 

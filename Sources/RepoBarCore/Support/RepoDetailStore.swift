@@ -56,12 +56,12 @@ struct RepoDetailCachePolicy: Sendable {
 
     func state(for cache: RepoDetailCache, now: Date) -> RepoDetailCacheState {
         RepoDetailCacheState(
-            openPulls: freshness(lastFetched: cache.openPullsFetchedAt, now: now, ttl: openPullsTTL),
-            ci: freshness(lastFetched: cache.ciFetchedAt, now: now, ttl: ciTTL),
-            activity: freshness(lastFetched: cache.activityFetchedAt, now: now, ttl: activityTTL),
-            traffic: freshness(lastFetched: cache.trafficFetchedAt, now: now, ttl: trafficTTL),
-            heatmap: freshness(lastFetched: cache.heatmapFetchedAt, now: now, ttl: heatmapTTL),
-            release: freshness(lastFetched: cache.releaseFetchedAt, now: now, ttl: releaseTTL)
+            openPulls: self.freshness(lastFetched: cache.openPullsFetchedAt, now: now, ttl: self.openPullsTTL),
+            ci: self.freshness(lastFetched: cache.ciFetchedAt, now: now, ttl: self.ciTTL),
+            activity: self.freshness(lastFetched: cache.activityFetchedAt, now: now, ttl: self.activityTTL),
+            traffic: self.freshness(lastFetched: cache.trafficFetchedAt, now: now, ttl: self.trafficTTL),
+            heatmap: self.freshness(lastFetched: cache.heatmapFetchedAt, now: now, ttl: self.heatmapTTL),
+            release: self.freshness(lastFetched: cache.releaseFetchedAt, now: now, ttl: self.releaseTTL)
         )
     }
 

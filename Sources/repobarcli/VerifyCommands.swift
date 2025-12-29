@@ -269,7 +269,7 @@ private func refreshPinned(_ pinned: [String], client: GitHubClient) async throw
     }
 }
 
-private func printJSON<T: Encodable>(_ output: T) throws {
+private func printJSON(_ output: some Encodable) throws {
     let encoder = JSONEncoder()
     encoder.outputFormatting = [.prettyPrinted, .sortedKeys]
     encoder.dateEncodingStrategy = .iso8601

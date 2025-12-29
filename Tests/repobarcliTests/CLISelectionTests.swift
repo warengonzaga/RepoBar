@@ -1,6 +1,6 @@
+@testable import repobarcli
 import RepoBarCore
 import Testing
-@testable import repobarcli
 
 struct CLISelectionTests {
     @Test

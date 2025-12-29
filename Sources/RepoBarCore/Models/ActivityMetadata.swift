@@ -16,17 +16,17 @@ public struct ActivityMetadata: Codable, Equatable, Sendable {
     public var label: String {
         switch (self.action, self.target) {
         case let (action?, target?) where target.hasPrefix("→"):
-            return "\(action) \(target)"
+            "\(action) \(target)"
         case let (action?, target?) where target.hasPrefix("#"):
-            return "\(action) \(target)"
+            "\(action) \(target)"
         case let (action?, target?):
-            return "\(action): \(target)"
+            "\(action): \(target)"
         case let (action?, nil):
-            return action
+            action
         case let (nil, target?):
-            return target
+            target
         default:
-            return ""
+            ""
         }
     }
 

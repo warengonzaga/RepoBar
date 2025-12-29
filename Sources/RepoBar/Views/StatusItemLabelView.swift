@@ -30,9 +30,9 @@ struct StatusItemLabelView: View {
     }
 
     private func aggregateStatus() -> AggregateStatus {
-        if session.account == .loggedOut { return .loggedOut }
-        if session.repositories.contains(where: { $0.ciStatus == .failing }) { return .red }
-        if session.repositories.contains(where: { $0.ciStatus == .pending }) { return .yellow }
+        if self.session.account == .loggedOut { return .loggedOut }
+        if self.session.repositories.contains(where: { $0.ciStatus == .failing }) { return .red }
+        if self.session.repositories.contains(where: { $0.ciStatus == .pending }) { return .yellow }
         return .green
     }
 

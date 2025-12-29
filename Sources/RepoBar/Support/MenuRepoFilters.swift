@@ -16,11 +16,11 @@ enum MenuRepoSelection: String, CaseIterable, Hashable {
     var onlyWith: RepositoryOnlyWith {
         switch self {
         case .all:
-            return .none
+            .none
         case .work:
-            return RepositoryOnlyWith(requireIssues: true, requirePRs: true)
+            RepositoryOnlyWith(requireIssues: true, requirePRs: true)
         case .pinned:
-            return .none
+            .none
         }
     }
 

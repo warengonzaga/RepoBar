@@ -1,5 +1,5 @@
-@testable import RepoBarCore
 import Foundation
+@testable import RepoBarCore
 import Testing
 
 struct GraphQLContributionParsingTests {

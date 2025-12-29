@@ -66,7 +66,7 @@ final class MenuItemHostingView: NSHostingView<AnyView>, MenuItemMeasuring, Menu
     override var allowsVibrancy: Bool { true }
     override var focusRingType: NSFocusRingType {
         get { MenuFocusRingStyle.type }
-        set { }
+        set {}
     }
 
     override var intrinsicContentSize: NSSize {
@@ -87,7 +87,7 @@ final class MenuItemHostingView: NSHostingView<AnyView>, MenuItemMeasuring, Menu
     }
 
     @available(*, unavailable)
-    required init?(coder: NSCoder) {
+    required init?(coder _: NSCoder) {
         fatalError("init(coder:) has not been implemented")
     }
 

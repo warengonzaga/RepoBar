@@ -354,15 +354,15 @@ extension RepoEvent {
     private func activityTargetLabel(owner: String, name: String) -> String? {
         switch self.eventType {
         case .pullRequest:
-            return self.issueTarget(number: self.payload.pullRequest?.number, title: self.payload.pullRequest?.title)
+            self.issueTarget(number: self.payload.pullRequest?.number, title: self.payload.pullRequest?.title)
         case .issues:
-            return self.issueTarget(number: self.payload.issue?.number, title: self.payload.issue?.title)
+            self.issueTarget(number: self.payload.issue?.number, title: self.payload.issue?.title)
         case .release:
-            return self.payload.release?.tagName ?? self.payload.release?.name
+            self.payload.release?.tagName ?? self.payload.release?.name
         case .fork, .create, .delete:
-            return self.repoTarget(owner: owner, name: name).map { "→ \($0)" }
+            self.repoTarget(owner: owner, name: name).map { "→ \($0)" }
         default:
-            return nil
+            nil
         }
     }
 
@@ -393,11 +393,11 @@ extension RepoEvent {
     private func repoTarget(owner: String, name: String) -> String? {
         switch self.eventType {
         case .fork:
-            return self.payload.forkee?.fullName ?? "\(owner)/\(name)"
+            self.payload.forkee?.fullName ?? "\(owner)/\(name)"
         case .create, .delete:
-            return "\(owner)/\(name)"
+            "\(owner)/\(name)"
         default:
-            return nil
+            nil
         }
     }
 
@@ -413,7 +413,7 @@ extension RepoEvent {
     }
 
     static func displayName(for type: ActivityEventType?, raw: String) -> String {
-        guard let type else { return Self.prettyName(for: raw) }
+        guard let type else { return self.prettyName(for: raw) }
         return switch type {
         case .pullRequest: "Pull Request"
         case .pullRequestReview: "Pull Request Review"

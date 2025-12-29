@@ -225,5 +225,4 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
     }
 
     @objc func menuItemNoOp(_: NSMenuItem) {}
-
 }

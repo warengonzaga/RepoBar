@@ -16,6 +16,6 @@ struct HeatmapBinningTests {
     func padsWhenInputIsSmaller() {
         let grid = HeatmapLayout.reshape(cells: [], columns: 3)
         #expect(grid.count == 3)
-        #expect(grid.flatMap { $0 }.count == 3 * HeatmapLayout.rows)
+        #expect(grid.flatMap(\.self).count == 3 * HeatmapLayout.rows)
     }
 }
