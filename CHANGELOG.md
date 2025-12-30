@@ -87,3 +87,4 @@
 - CI status dots now increase contrast on highlighted menu rows.
 - GitHub “stats still generating” (HTTP 202) no longer clutters the main repo list and is now shown in repo details instead.
 - Fixed CLI/app binary naming collisions on case-insensitive filesystems (CLI builds as `repobarcli` and is embedded as `repobarcli` in the app bundle).
+- Menu item avatar placeholders no longer expand to infinite height during size measurements.

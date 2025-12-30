@@ -78,6 +78,5 @@ struct IssueMenuItemView: View {
                     .font(.system(size: 10))
                     .foregroundStyle(.secondary)
             )
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
