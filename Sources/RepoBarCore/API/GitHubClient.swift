@@ -81,7 +81,19 @@ public actor GitHubClient {
         let items = try await self.userReposPaginated(limit: limit)
         let allowedOwners = try await self.allowedOwnerLogins()
         let filtered = items.filter { allowedOwners.contains($0.owner.login.lowercased()) }
-        return try await self.expandActivityItems(filtered)
+        let activityResults = await self.fetchActivityResults(for: filtered)
+        return filtered.map { item in
+            let fullName = "\(item.owner.login)/\(item.name)"
+            let result = activityResults[fullName] ?? ActivityFetchResult(
+                pulls: .failure(URLError(.unknown)),
+                activity: .failure(URLError(.unknown))
+            )
+            return self.activityRepository(
+                from: item,
+                openPullsResult: result.pulls,
+                activityResult: result.activity
+            )
+        }
     }
 
     /// Latest release (including prereleases). Returns `nil` if the repo has no releases.
@@ -106,14 +118,34 @@ public actor GitHubClient {
         }
     }
 
-    private func expandActivityItems(_ items: [RepoItem]) async throws -> [Repository] {
-        try await withThrowingTaskGroup(of: Repository.self) { group in
-            for repo in items {
-                group.addTask { try await self.activityRepository(from: repo) }
+    private struct ActivityFetchResult {
+        let pulls: Result<Int, Error>
+        let activity: Result<ActivitySnapshot, Error>
+    }
+
+    private func fetchActivityResults(for items: [RepoItem]) async -> [String: ActivityFetchResult] {
+        await withTaskGroup(of: (String, ActivityFetchResult).self) { group in
+            for item in items {
+                group.addTask { [self] in
+                    let owner = item.owner.login
+                    let name = item.name
+                    let fullName = "\(owner)/\(name)"
+                    async let openPullsResult: Result<Int, Error> = self.capture {
+                        try await self.openPullRequestCount(owner: owner, name: name)
+                    }
+                    async let activityResult: Result<ActivitySnapshot, Error> = self.capture {
+                        try await self.recentActivity(owner: owner, name: name, limit: 10)
+                    }
+                    let result = ActivityFetchResult(
+                        pulls: await openPullsResult,
+                        activity: await activityResult
+                    )
+                    return (fullName, result)
+                }
             }
-            var out: [Repository] = []
-            for try await repo in group {
-                out.append(repo)
+            var out: [String: ActivityFetchResult] = [:]
+            for await (fullName, result) in group {
+                out[fullName] = result
             }
             return out
         }
@@ -329,21 +361,17 @@ public actor GitHubClient {
         )
     }
 
-    private func activityRepository(from item: RepoItem) async throws -> Repository {
+    private func activityRepository(
+        from item: RepoItem,
+        openPullsResult: Result<Int, Error>,
+        activityResult: Result<ActivitySnapshot, Error>
+    ) -> Repository {
         var accumulator = RepoErrorAccumulator()
         let owner = item.owner.login
         let name = item.name
-
-        async let openPullsResult: Result<Int, Error> = self.capture {
-            try await self.openPullRequestCount(owner: owner, name: name)
-        }
-        async let activityResult: Result<ActivitySnapshot, Error> = self.capture {
-            try await self.recentActivity(owner: owner, name: name, limit: 10)
-        }
-
-        let openPulls = await self.value(from: openPullsResult, into: &accumulator) ?? 0
+        let openPulls = self.value(from: openPullsResult, into: &accumulator) ?? 0
         let issues = max(item.openIssuesCount - openPulls, 0)
-        let snapshot = await self.value(from: activityResult, into: &accumulator)
+        let snapshot = self.value(from: activityResult, into: &accumulator)
         let activity: ActivityEvent? = snapshot?.latest ?? snapshot?.events.first
         let activityEvents = snapshot?.events ?? []
 
