@@ -53,13 +53,17 @@ enum TerminalApp: String, CaseIterable {
         return match
     }
 
-    func open(at url: URL) {
+    func open(at url: URL, rootBookmarkData: Data?) {
         guard let appURL = NSWorkspace.shared.urlForApplication(withBundleIdentifier: self.bundleIdentifier) else {
-            NSWorkspace.shared.open(url)
+            SecurityScopedBookmark.withAccess(to: url, rootBookmarkData: rootBookmarkData) {
+                NSWorkspace.shared.open(url)
+            }
             return
         }
         let configuration = NSWorkspace.OpenConfiguration()
         configuration.activates = true
-        NSWorkspace.shared.open([url], withApplicationAt: appURL, configuration: configuration)
+        SecurityScopedBookmark.withAccess(to: url, rootBookmarkData: rootBookmarkData) {
+            NSWorkspace.shared.open([url], withApplicationAt: appURL, configuration: configuration)
+        }
     }
 }

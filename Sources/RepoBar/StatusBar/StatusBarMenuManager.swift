@@ -135,7 +135,7 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
         guard let url = sender.representedObject as? URL else { return }
         let preferred = self.appState.session.settings.localProjects.preferredTerminal
         let terminal = TerminalApp.resolve(preferred)
-        terminal.open(at: url)
+        terminal.open(at: url, rootBookmarkData: self.appState.session.settings.localProjects.rootBookmarkData)
     }
 
     @objc func copyRepoName(_ sender: NSMenuItem) {
@@ -649,7 +649,12 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
     }
 
     func open(url: URL) {
-        NSWorkspace.shared.open(url)
+        SecurityScopedBookmark.withAccess(
+            to: url,
+            rootBookmarkData: self.appState.session.settings.localProjects.rootBookmarkData
+        ) {
+            NSWorkspace.shared.open(url)
+        }
     }
 
     @objc func menuItemNoOp(_: NSMenuItem) {}

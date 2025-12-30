@@ -42,7 +42,12 @@ struct RepoCardView: View {
     }
 
     private func open(url: URL) {
-        NSWorkspace.shared.open(url)
+        SecurityScopedBookmark.withAccess(
+            to: url,
+            rootBookmarkData: self.session.settings.localProjects.rootBookmarkData
+        ) {
+            NSWorkspace.shared.open(url)
+        }
     }
 
     private func accessibilitySummary() -> String {
@@ -259,7 +264,7 @@ struct RepoCardView: View {
     private func openTerminal(at url: URL) {
         let preferred = self.session.settings.localProjects.preferredTerminal
         let terminal = TerminalApp.resolve(preferred)
-        terminal.open(at: url)
+        terminal.open(at: url, rootBookmarkData: self.session.settings.localProjects.rootBookmarkData)
     }
 }
 
