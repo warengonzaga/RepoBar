@@ -38,6 +38,7 @@ struct LocalRepoStateMenuView: View {
                     title: "Reset",
                     systemImage: "arrow.counterclockwise",
                     enabled: self.resetEnabled,
+                    isDestructive: true,
                     action: self.onReset
                 )
             }
@@ -146,11 +147,18 @@ struct LocalRepoStateMenuView: View {
         self.status.upstreamBranch != nil
     }
 
-    private func actionButton(title: String, systemImage: String, enabled: Bool, action: @escaping () -> Void) -> some View {
+    private func actionButton(
+        title: String,
+        systemImage: String,
+        enabled: Bool,
+        isDestructive: Bool = false,
+        action: @escaping () -> Void
+    ) -> some View {
         LocalRepoActionButton(
             title: title,
             systemImage: systemImage,
             enabled: enabled,
+            isDestructive: isDestructive,
             isHighlighted: self.isHighlighted,
             action: action
         )
@@ -191,6 +199,7 @@ private struct LocalRepoActionButton: View {
     let title: String
     let systemImage: String
     let enabled: Bool
+    let isDestructive: Bool
     let isHighlighted: Bool
     let action: () -> Void
 
@@ -204,19 +213,29 @@ private struct LocalRepoActionButton: View {
                 .padding(.vertical, 4)
         }
         .buttonStyle(.plain)
-        .foregroundStyle(self.enabled ? MenuHighlightStyle.primary(self.isHighlighted) : .secondary)
+        .foregroundStyle(self.foregroundStyle)
         .background(self.hoverBackground, in: Capsule(style: .continuous))
         .opacity(self.enabled ? 1 : 0.5)
         .disabled(!self.enabled)
         .onHover { self.isHovered = $0 }
     }
 
+    private var foregroundStyle: Color {
+        guard self.enabled else { return .secondary }
+        if self.isDestructive { return Color(nsColor: .systemRed) }
+        return MenuHighlightStyle.primary(self.isHighlighted)
+    }
+
     private var hoverBackground: Color {
         guard self.isHovered else { return .clear }
         if self.isHighlighted {
-            return MenuHighlightStyle.selectionText.opacity(0.18)
+            return self.isDestructive
+                ? Color(nsColor: .systemRed).opacity(0.18)
+                : MenuHighlightStyle.selectionText.opacity(0.18)
         }
-        return Color(nsColor: .controlAccentColor).opacity(0.12)
+        return self.isDestructive
+            ? Color(nsColor: .systemRed).opacity(0.12)
+            : Color(nsColor: .controlAccentColor).opacity(0.12)
     }
 }
 

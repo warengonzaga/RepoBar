@@ -650,15 +650,13 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
             for worktree in worktrees {
                 let branch = worktree.branch ?? "Detached"
                 let displayPath = PathFormatter.displayString(worktree.path.path)
-                let row = LocalWorktreeMenuRowView(
-                    path: displayPath,
+                menu.addItem(self.makeLocalWorktreeMenuItem(
+                    displayPath: displayPath,
                     branch: branch,
                     isCurrent: worktree.isCurrent,
-                    onSelect: { [weak self] in
-                        self?.switchLocalWorktree(path: worktree.path, fullName: fullName)
-                    }
-                )
-                menu.addItem(self.menuBuilder.viewItem(for: row, enabled: true, highlightable: true))
+                    path: worktree.path,
+                    fullName: fullName
+                ))
             }
             menu.update()
         case let .failure(error):
@@ -666,6 +664,25 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
             self.presentAlert(title: "Worktree list failed", message: error.userFacingMessage)
             menu.update()
         }
+    }
+
+    func makeLocalWorktreeMenuItem(
+        displayPath: String,
+        branch: String,
+        isCurrent: Bool,
+        path: URL,
+        fullName: String
+    ) -> NSMenuItem {
+        let row = LocalWorktreeMenuRowView(
+            path: displayPath,
+            branch: branch,
+            isCurrent: isCurrent
+        )
+        let item = self.menuBuilder.viewItem(for: row, enabled: true, highlightable: true)
+        item.target = self
+        item.action = #selector(self.switchLocalWorktree(_:))
+        item.representedObject = LocalWorktreeAction(path: path, fullName: fullName)
+        return item
     }
 
     private func runLocalGitTask(

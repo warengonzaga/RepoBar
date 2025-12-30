@@ -4,12 +4,11 @@ struct LocalWorktreeMenuRowView: View {
     let path: String
     let branch: String
     let isCurrent: Bool
-    let onSelect: (() -> Void)?
 
     @Environment(\.menuItemHighlighted) private var isHighlighted
 
     var body: some View {
-        let row = HStack(alignment: .firstTextBaseline, spacing: MenuStyle.submenuIconSpacing) {
+        HStack(alignment: .firstTextBaseline, spacing: MenuStyle.submenuIconSpacing) {
             Image(systemName: self.isCurrent ? "checkmark" : "circle")
                 .font(.caption2.weight(.semibold))
                 .foregroundStyle(MenuHighlightStyle.secondary(self.isHighlighted))
@@ -32,13 +31,5 @@ struct LocalWorktreeMenuRowView: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 5)
-
-        if let onSelect {
-            row
-                .contentShape(Rectangle())
-                .onTapGesture { onSelect() }
-        } else {
-            row
-        }
     }
 }
