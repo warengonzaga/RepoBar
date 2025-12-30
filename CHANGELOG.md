@@ -79,6 +79,7 @@
 - Heatmaps now fill the full menu row width (reclaim submenu chevron padding).
 - Local projects branch detection now uses the first available git binary on PATH/Homebrew to avoid “unknown.”
 - Local projects scanning now correctly traverses security-scoped folder bookmarks resolved to file reference URLs.
+- Local projects now match repo folders case-insensitively to avoid missing status on case-insensitive filesystems.
 - CI status dots now increase contrast on highlighted menu rows.
 - GitHub “stats still generating” (HTTP 202) no longer clutters the main repo list and is now shown in repo details instead.
 - Fixed CLI/app binary naming collisions on case-insensitive filesystems (CLI builds as `repobarcli` and is embedded as `repobarcli` in the app bundle).

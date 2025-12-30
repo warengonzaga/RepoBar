@@ -102,6 +102,8 @@ public struct LocalRepoIndex: Equatable, Sendable {
     public var all: [LocalRepoStatus] = []
     public var byFullName: [String: LocalRepoStatus] = [:]
     public var byName: [String: [LocalRepoStatus]] = [:]
+    public var byFullNameLowercased: [String: [LocalRepoStatus]] = [:]
+    public var byNameLowercased: [String: [LocalRepoStatus]] = [:]
 
     public static let empty = LocalRepoIndex()
 
@@ -113,26 +115,45 @@ public struct LocalRepoIndex: Equatable, Sendable {
             status.fullName.map { ($0, status) }
         })
         var nameIndex: [String: [LocalRepoStatus]] = [:]
+        var nameIndexLowercased: [String: [LocalRepoStatus]] = [:]
+        var fullNameIndexLowercased: [String: [LocalRepoStatus]] = [:]
         for status in statuses {
             nameIndex[status.name, default: []].append(status)
+            nameIndexLowercased[status.name.lowercased(), default: []].append(status)
+            if let fullName = status.fullName?.lowercased() {
+                fullNameIndexLowercased[fullName, default: []].append(status)
+            }
         }
         self.byName = nameIndex
+        self.byNameLowercased = nameIndexLowercased
+        self.byFullNameLowercased = fullNameIndexLowercased
     }
 
     public func status(for repo: Repository) -> LocalRepoStatus? {
         if let exact = self.byFullName[repo.fullName] { return exact }
+        if let match = self.uniqueStatus(in: self.byFullNameLowercased, forKey: repo.fullName.lowercased()) {
+            return match
+        }
         return self.uniqueStatus(forName: repo.name)
     }
 
     public func status(forFullName fullName: String) -> LocalRepoStatus? {
         if let exact = self.byFullName[fullName] { return exact }
+        if let match = self.uniqueStatus(in: self.byFullNameLowercased, forKey: fullName.lowercased()) {
+            return match
+        }
         let name = fullName.split(separator: "/").last.map(String.init)
         if let name { return self.uniqueStatus(forName: name) }
         return nil
     }
 
     private func uniqueStatus(forName name: String) -> LocalRepoStatus? {
-        guard let matches = self.byName[name], matches.count == 1 else { return nil }
+        if let exact = self.uniqueStatus(in: self.byName, forKey: name) { return exact }
+        return self.uniqueStatus(in: self.byNameLowercased, forKey: name.lowercased())
+    }
+
+    private func uniqueStatus(in index: [String: [LocalRepoStatus]], forKey key: String) -> LocalRepoStatus? {
+        guard let matches = index[key], matches.count == 1 else { return nil }
         return matches.first
     }
 }

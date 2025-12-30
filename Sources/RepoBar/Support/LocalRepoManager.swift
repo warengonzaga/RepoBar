@@ -123,10 +123,11 @@ actor LocalRepoManager {
     ) -> (cached: [LocalRepoStatus], refresh: [URL]) {
         guard repoRoots.isEmpty == false else { return ([], []) }
 
-        let interesting: [URL] = if matchRepoNames.isEmpty {
+        let matchKeys = Set(matchRepoNames.map { $0.lowercased() })
+        let interesting: [URL] = if matchKeys.isEmpty {
             []
         } else {
-            repoRoots.filter { matchRepoNames.contains($0.lastPathComponent) }
+            repoRoots.filter { matchKeys.contains($0.lastPathComponent.lowercased()) }
         }
 
         var cached: [LocalRepoStatus] = []

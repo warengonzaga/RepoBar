@@ -162,6 +162,25 @@ struct LocalProjectsServiceTests {
         #expect(repoBStatus != nil)
         #expect(repoBStatus?.syncState == .synced)
     }
+
+    @Test
+    func localRepoIndex_matchesCaseInsensitiveNamesAndFullNames() {
+        let status = LocalRepoStatus(
+            path: URL(fileURLWithPath: "/tmp/CodexBar"),
+            name: "CodexBar",
+            fullName: "steipete/CodexBar",
+            branch: "main",
+            isClean: true,
+            aheadCount: 0,
+            behindCount: 0,
+            syncState: .synced
+        )
+        let index = LocalRepoIndex(statuses: [status])
+        let repo = makeRepository(name: "codexbar", owner: "steipete")
+
+        #expect(index.status(for: repo) != nil)
+        #expect(index.status(forFullName: "STEIPETE/CODEXBAR") != nil)
+    }
 }
 
 private func makeTempDirectory() throws -> URL {
@@ -207,6 +226,32 @@ private func initializeRepo(at url: URL, origin: String) throws {
     try writeFile(url.appendingPathComponent("README.md"), contents: "test\n")
     try runGit(["add", "."], in: url)
     try runGit(["commit", "-m", "init"], in: url)
+}
+
+private func makeRepository(name: String, owner: String) -> Repository {
+    Repository(
+        id: UUID().uuidString,
+        name: name,
+        owner: owner,
+        isFork: false,
+        isArchived: false,
+        sortOrder: nil,
+        error: nil,
+        rateLimitedUntil: nil,
+        ciStatus: .unknown,
+        ciRunCount: nil,
+        openIssues: 0,
+        openPulls: 0,
+        stars: 0,
+        forks: 0,
+        pushedAt: nil,
+        latestRelease: nil,
+        latestActivity: nil,
+        activityEvents: [],
+        traffic: nil,
+        heatmap: [],
+        detailCacheState: nil
+    )
 }
 
 private enum GitTestError: Error {
