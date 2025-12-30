@@ -92,6 +92,8 @@ final class AppState {
     private let hydrateConcurrencyLimit = 4
     private var prefetchTask: Task<Void, Never>?
     private let tokenRefreshInterval: TimeInterval = 300
+    private let menuRefreshDebounceInterval: TimeInterval = 1
+    private var lastMenuRefreshRequest: Date?
 
     // Default GitHub App values for convenience login from the main window.
     private let defaultClientID = RepoBarAuthDefaults.clientID
@@ -125,6 +127,9 @@ final class AppState {
 
     func refreshIfNeededForMenu() {
         let now = Date()
+        if let lastRequest = self.lastMenuRefreshRequest, now.timeIntervalSince(lastRequest) < self.menuRefreshDebounceInterval {
+            return
+        }
         let hasFreshSnapshot = self.session.menuSnapshot.map {
             $0.isStale(now: now, interval: self.menuRefreshInterval) == false
         } ?? false
@@ -132,6 +137,7 @@ final class AppState {
             return
         }
         if self.refreshTask != nil || self.menuRefreshTask != nil { return }
+        self.lastMenuRefreshRequest = now
         self.menuRefreshTask = Task { [weak self] in
             try? await Task.sleep(for: .milliseconds(250))
             await MainActor.run {
