@@ -25,4 +25,3 @@ struct ErrorDisplayCoverageTests {
         #expect(error.userFacingMessage == "boom")
     }
 }
-

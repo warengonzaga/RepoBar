@@ -16,4 +16,3 @@ struct RepoDetailCacheStateCoverageTests {
         #expect(state.release == .missing)
     }
 }
-

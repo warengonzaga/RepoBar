@@ -15,4 +15,3 @@ struct PathFormatterCoverageTests {
         #expect(PathFormatter.abbreviateHome("/private/tmp") == "/private/tmp")
     }
 }
-

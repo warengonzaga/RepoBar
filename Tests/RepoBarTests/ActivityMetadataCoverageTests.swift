@@ -21,4 +21,3 @@ struct ActivityMetadataCoverageTests {
         #expect(ActivityMetadata(actor: "a", action: nil, target: nil, url: url).deepLink == url)
     }
 }
-

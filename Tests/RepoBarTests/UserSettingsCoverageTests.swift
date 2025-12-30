@@ -28,4 +28,3 @@ struct UserSettingsCoverageTests {
         #expect(GlobalActivityScope.myActivity.label == "My activity")
     }
 }
-
