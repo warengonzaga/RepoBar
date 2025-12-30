@@ -192,7 +192,8 @@ private struct RepoInputRow<Accessory: View>: View {
                                     get: {
                                         self.showSuggestions && self.isFocused && !self.suggestions.isEmpty
                                     },
-                                    set: { self.showSuggestions = $0 })
+                                    set: { self.showSuggestions = $0 }
+                                )
                             )
                         )
 
@@ -258,31 +259,33 @@ private struct RepoInputRow<Accessory: View>: View {
                 RepositoryFilter.apply($0, includeForks: includeForks, includeArchived: includeArchived)
             }
 
-            let localScored: [ScoredSuggestion] = {
-                guard let filteredPrefetched else { return [] }
-                return filteredPrefetched.compactMap { repo in
-                    guard let score = Self.score(repo: repo, query: trimmed) else { return nil }
-                    return ScoredSuggestion(repo: repo, score: score + 30, sourceRank: 0)
-                }
-            }()
+            let localScored = filteredPrefetched.map {
+                RepoAutocompleteScoring.scored(repos: $0, query: trimmed, sourceRank: 0, bonus: 30)
+            } ?? []
 
-            var merged = Self.sorted(localScored)
+            var merged = RepoAutocompleteScoring.sort(localScored)
 
             if trimmed.count >= 3 {
                 let remote = try await self.appState.github.searchRepositories(matching: trimmed)
                 let filteredRemote = RepositoryFilter.apply(remote, includeForks: includeForks, includeArchived: includeArchived)
-                let remoteScored = filteredRemote.compactMap { repo in
-                    guard let score = Self.score(repo: repo, query: trimmed) else { return nil }
-                    return ScoredSuggestion(repo: repo, score: score, sourceRank: 1)
-                }
-                merged = Self.mergeScored(local: merged, remote: remoteScored, limit: 8)
+                let remoteScored = RepoAutocompleteScoring.scored(
+                    repos: filteredRemote,
+                    query: trimmed,
+                    sourceRank: 1
+                )
+                let mergedRepos = RepoAutocompleteScoring.merge(
+                    local: merged,
+                    remote: remoteScored,
+                    limit: 8
+                )
+                merged = mergedRepos.map { RepoAutocompleteScoring.Scored(repo: $0, score: 0, sourceRank: 0) }
             } else {
                 merged = Array(merged.prefix(8))
             }
 
             if merged.isEmpty, let filteredPrefetched {
                 merged = filteredPrefetched.prefix(8).map { repo in
-                    ScoredSuggestion(repo: repo, score: 0, sourceRank: 0)
+                    RepoAutocompleteScoring.Scored(repo: repo, score: 0, sourceRank: 0)
                 }
             }
 
@@ -312,11 +315,7 @@ private struct RepoInputRow<Accessory: View>: View {
         }
     }
 
-    private struct ScoredSuggestion {
-        let repo: Repository
-        let score: Int
-        let sourceRank: Int
-    }
+    private typealias ScoredSuggestion = RepoAutocompleteScoring.Scored
 
     private func handleMove(_ direction: MoveCommandDirection) {
         guard !self.suggestions.isEmpty else { return }
@@ -334,120 +333,4 @@ private struct RepoInputRow<Accessory: View>: View {
         }
     }
 
-    private static func sorted(_ scored: [ScoredSuggestion]) -> [ScoredSuggestion] {
-        scored.sorted {
-            if $0.score != $1.score { return $0.score > $1.score }
-            if $0.sourceRank != $1.sourceRank { return $0.sourceRank < $1.sourceRank }
-            return $0.repo.fullName.localizedCaseInsensitiveCompare($1.repo.fullName) == .orderedAscending
-        }
-    }
-
-    private static func mergeScored(
-        local: [ScoredSuggestion],
-        remote: [ScoredSuggestion],
-        limit: Int
-    ) -> [ScoredSuggestion] {
-        var bestByKey: [String: ScoredSuggestion] = [:]
-        let insert: (ScoredSuggestion) -> Void = { scored in
-            let key = scored.repo.fullName.lowercased()
-            if let existing = bestByKey[key] {
-                if scored.score > existing.score {
-                    bestByKey[key] = scored
-                }
-            } else {
-                bestByKey[key] = scored
-            }
-        }
-        local.forEach(insert)
-        remote.forEach(insert)
-        return Array(Self.sorted(Array(bestByKey.values)).prefix(limit))
-    }
-
-    private static func score(repo: Repository, query: String) -> Int? {
-        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty else { return nil }
-        let lowerQuery = trimmed.lowercased()
-        let fullName = repo.fullName.lowercased()
-        if fullName == lowerQuery { return 1_000 }
-        if fullName.hasPrefix(lowerQuery) { return 700 }
-
-        let parts = lowerQuery.split(separator: "/", omittingEmptySubsequences: false)
-        let ownerQuery = parts.count > 1 ? String(parts[0]) : nil
-        let repoQuery = parts.count > 1 ? String(parts[1]) : lowerQuery
-
-        let ownerScore = Self.componentScore(
-            query: ownerQuery ?? "",
-            target: repo.owner,
-            exact: 200,
-            prefix: 120,
-            substring: 80,
-            subsequence: 40)
-        let repoScore = Self.componentScore(
-            query: repoQuery,
-            target: repo.name,
-            exact: 600,
-            prefix: 420,
-            substring: 260,
-            subsequence: 160)
-
-        var score = 0
-        if let ownerScore, ownerQuery != nil {
-            score += ownerScore
-        }
-        if let repoScore {
-            score += repoScore
-        }
-
-        if ownerQuery == nil {
-            if repoScore == nil {
-                let ownerFallback = Self.componentScore(
-                    query: lowerQuery,
-                    target: repo.owner,
-                    exact: 120,
-                    prefix: 80,
-                    substring: 60,
-                    subsequence: 30)
-                guard let ownerFallback else { return nil }
-                score += ownerFallback
-            }
-        } else if (ownerScore == nil && repoScore == nil) {
-            return nil
-        }
-
-        if ownerScore != nil, repoScore != nil {
-            score += 40
-        }
-        return score == 0 ? nil : score
-    }
-
-    private static func componentScore(
-        query: String,
-        target: String,
-        exact: Int,
-        prefix: Int,
-        substring: Int,
-        subsequence: Int
-    ) -> Int? {
-        guard !query.isEmpty else { return 0 }
-        let lowerTarget = target.lowercased()
-        if lowerTarget == query { return exact }
-        if lowerTarget.hasPrefix(query) { return prefix }
-        if lowerTarget.contains(query) { return substring }
-        if Self.isSubsequence(query, of: lowerTarget) { return subsequence }
-        return nil
-    }
-
-    private static func isSubsequence(_ needle: String, of haystack: String) -> Bool {
-        var needleIndex = needle.startIndex
-        var haystackIndex = haystack.startIndex
-
-        while needleIndex < needle.endIndex && haystackIndex < haystack.endIndex {
-            if needle[needleIndex] == haystack[haystackIndex] {
-                needleIndex = needle.index(after: needleIndex)
-            }
-            haystackIndex = haystack.index(after: haystackIndex)
-        }
-
-        return needleIndex == needle.endIndex
-    }
 }
