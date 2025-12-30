@@ -146,12 +146,15 @@ final class StatusBarMenuBuilder {
         menu.delegate = self.target
         let settings = self.appState.session.settings
 
-        menu.addItem(self.actionItem(
+        let openRow = RecentListSubmenuRowView(
             title: "Open \(repo.title)",
-            action: #selector(self.target.openRepo),
-            represented: repo.title,
-            systemImage: "folder"
-        ))
+            systemImage: "folder",
+            badgeText: nil,
+            onOpen: { [weak target] in
+                target?.openRepoFromMenu(fullName: repo.title)
+            }
+        )
+        menu.addItem(self.viewItem(for: openRow, enabled: true, highlightable: true))
 
         menu.addItem(self.recentListSubmenuItem(RecentListConfig(
             title: "Issues",

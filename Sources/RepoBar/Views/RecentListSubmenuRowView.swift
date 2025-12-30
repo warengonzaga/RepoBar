@@ -4,6 +4,7 @@ struct RecentListSubmenuRowView: View {
     let title: String
     let systemImage: String
     let badgeText: String?
+    let onOpen: (() -> Void)?
 
     private let iconColumnWidth: CGFloat = 18
     private let iconBaselineOffset: CGFloat = 1
@@ -11,7 +12,29 @@ struct RecentListSubmenuRowView: View {
     @Environment(\.menuItemHighlighted) private var isHighlighted
     @Environment(\.colorScheme) private var colorScheme
 
+    init(
+        title: String,
+        systemImage: String,
+        badgeText: String? = nil,
+        onOpen: (() -> Void)? = nil
+    ) {
+        self.title = title
+        self.systemImage = systemImage
+        self.badgeText = badgeText
+        self.onOpen = onOpen
+    }
+
     var body: some View {
+        if let onOpen {
+            self.row
+                .contentShape(Rectangle())
+                .onTapGesture { onOpen() }
+        } else {
+            self.row
+        }
+    }
+
+    private var row: some View {
         HStack(alignment: .firstTextBaseline, spacing: 8) {
             Image(systemName: self.systemImage)
                 .symbolRenderingMode(.hierarchical)
