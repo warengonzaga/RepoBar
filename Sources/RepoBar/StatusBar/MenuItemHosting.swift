@@ -78,8 +78,9 @@ struct MenuItemContainerView<Content: View>: View {
 }
 
 @MainActor
-final class MenuItemHostingView: NSHostingView<AnyView>, MenuItemMeasuring, MenuItemHighlighting {
+final class MenuItemHostingView: NSView, MenuItemMeasuring, MenuItemHighlighting {
     private let highlightState: MenuItemHighlightState?
+    private let hostingController: NSHostingController<AnyView>
 
     override var allowsVibrancy: Bool { true }
     override var focusRingType: NSFocusRingType {
@@ -88,26 +89,24 @@ final class MenuItemHostingView: NSHostingView<AnyView>, MenuItemMeasuring, Menu
     }
 
     override var intrinsicContentSize: NSSize {
-        let size = super.intrinsicContentSize
-        guard self.frame.width > 0 else { return size }
-        return NSSize(width: self.frame.width, height: size.height)
+        let size = self.hostingController.view.intrinsicContentSize
+        guard self.bounds.width > 0 else { return size }
+        return NSSize(width: self.bounds.width, height: size.height)
     }
 
     init(rootView: AnyView, highlightState: MenuItemHighlightState) {
         self.highlightState = highlightState
-        super.init(rootView: rootView)
-        if #available(macOS 13.0, *) {
-            self.sizingOptions = [.minSize, .intrinsicContentSize]
-        }
+        self.hostingController = NSHostingController(rootView: rootView)
+        super.init(frame: .zero)
+        self.configureHostingView()
     }
 
     @MainActor
     required init(rootView: AnyView) {
         self.highlightState = nil
-        super.init(rootView: rootView)
-        if #available(macOS 13.0, *) {
-            self.sizingOptions = [.minSize, .intrinsicContentSize]
-        }
+        self.hostingController = NSHostingController(rootView: rootView)
+        super.init(frame: .zero)
+        self.configureHostingView()
     }
 
     @available(*, unavailable)
@@ -115,25 +114,37 @@ final class MenuItemHostingView: NSHostingView<AnyView>, MenuItemMeasuring, Menu
         fatalError("init(coder:) has not been implemented")
     }
 
+    override func layout() {
+        super.layout()
+        self.hostingController.view.frame = self.bounds
+    }
+
     func setHighlighted(_ highlighted: Bool) {
         self.highlightState?.isHighlighted = highlighted
     }
 
     func measuredHeight(width: CGFloat) -> CGFloat {
-        if self.frame.width != width {
-            self.frame = NSRect(origin: self.frame.origin, size: NSSize(width: width, height: 10))
+        if self.frame.size.width != width || self.bounds.size.width != width {
+            self.frame.size.width = width
+            self.bounds.size.width = width
+            self.hostingController.view.frame = self.bounds
+            self.invalidateIntrinsicContentSize()
         }
-        self.needsLayout = true
-        self.layoutSubtreeIfNeeded()
-        let oldHeight = self.frame.height
-        self.frame.size.height = 10000
-        self.needsLayout = true
-        self.layoutSubtreeIfNeeded()
-        let size = self.fittingSize
-        self.frame.size.height = oldHeight
 
+        let proposed = NSSize(width: width, height: .greatestFiniteMagnitude)
+        let measured = self.hostingController.sizeThatFits(in: proposed)
         let scale = self.window?.backingScaleFactor ?? NSScreen.main?.backingScaleFactor ?? 2
-        let rounded = ceil(size.height * scale) / scale
-        return rounded + (1 / scale)
+        let rounded = ceil(measured.height * scale) / scale
+        return rounded
+    }
+
+    private func configureHostingView() {
+        self.hostingController.view.translatesAutoresizingMaskIntoConstraints = true
+        self.hostingController.view.autoresizingMask = [.width, .height]
+        self.hostingController.view.frame = self.bounds
+        self.addSubview(self.hostingController.view)
+        if #available(macOS 13.0, *) {
+            self.hostingController.sizingOptions = [.minSize, .intrinsicContentSize]
+        }
     }
 }

@@ -67,7 +67,7 @@
 - Activity labels now use readable event names and prefer issue/PR titles over raw event types.
 - Menu no longer preselects the first item on open.
 - Fixed a crash when opening menus with the raster heatmap renderer.
-- Menu item hosting now opts into modern sizing behavior to avoid clipped content.
+- Menu item hosting now uses NSHostingController sizeThatFits for reliable wrapped text sizing.
 - Menu item height measurement now rounds to full pixels to keep separators visible.
 - Menu item height measurement now adds a 1pt buffer to avoid missing separators.
 - Menu rows now remeasure on menu resize, and highlighted separators stay visible.
