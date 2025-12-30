@@ -78,8 +78,24 @@ final class HeatmapRasterNSView: NSView {
         self.scheduleRender()
     }
 
+    override func setFrameSize(_ newSize: NSSize) {
+        super.setFrameSize(newSize)
+        self.scheduleRender()
+    }
+
+    override func setBoundsSize(_ newSize: NSSize) {
+        super.setBoundsSize(newSize)
+        self.scheduleRender()
+    }
+
     override func viewDidMoveToWindow() {
         super.viewDidMoveToWindow()
+        self.scheduleRender()
+    }
+
+    override func viewDidChangeBackingProperties() {
+        super.viewDidChangeBackingProperties()
+        self.lastAppliedRenderKey = nil
         self.scheduleRender()
     }
 
