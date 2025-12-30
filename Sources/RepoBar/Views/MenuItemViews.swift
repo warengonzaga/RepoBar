@@ -466,20 +466,28 @@ struct ErrorBanner: View {
 struct MenuInfoTextRowView: View {
     let text: String
     let lineLimit: Int
+    private let iconColumnWidth: CGFloat = 18
+    private let iconSpacing: CGFloat = 8
 
     var body: some View {
-        HStack(spacing: 6) {
+        HStack(alignment: .firstTextBaseline, spacing: self.iconSpacing) {
+            Text(" ")
+                .font(.caption)
+                .frame(width: self.iconColumnWidth)
+                .accessibilityHidden(true)
+
             Text(self.text)
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineLimit(self.lineLimit)
                 .multilineTextAlignment(.leading)
                 .fixedSize(horizontal: false, vertical: true)
+
             Spacer(minLength: 0)
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, MenuStyle.cardHorizontalPadding)
-        .padding(.vertical, 4)
+        .padding(.vertical, MenuStyle.cardVerticalPadding)
     }
 }
 
