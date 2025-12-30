@@ -91,7 +91,7 @@ extension StatusBarMenuBuilder {
         }
     }
 
-    private func moreCommitsMenuItem(commits: [RepoCommitSummary]) -> NSMenuItem {
+    func moreCommitsMenuItem(commits: [RepoCommitSummary]) -> NSMenuItem {
         let submenu = NSMenu()
         submenu.autoenablesItems = false
         commits.forEach { submenu.addItem(self.commitMenuItem(for: $0)) }

@@ -19,7 +19,6 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
     private var webURLBuilder: RepoWebURLBuilder { RepoWebURLBuilder(host: self.appState.session.settings.githubHost) }
 
     private let recentListLimit = AppLimits.RecentLists.limit
-    private let recentListPreviewLimit = AppLimits.RecentLists.previewLimit
     private let recentListCacheTTL: TimeInterval = AppLimits.RecentLists.cacheTTL
     private let recentListLoadTimeout: TimeInterval = AppLimits.RecentLists.loadTimeout
     private let issueLabelChipLimit = AppLimits.RecentLists.issueLabelChipLimit
@@ -187,6 +186,25 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
 
     @objc func openCommits(_ sender: NSMenuItem) {
         self.openRepoPath(sender: sender, path: "commits")
+    }
+
+    func recentCommitsForMenu(fullName: String) -> [RepoCommitSummary]? {
+        let now = Date()
+        return self.recentCommitsCache.cached(for: fullName, now: now, maxAge: self.recentListCacheTTL)
+            ?? self.recentCommitsCache.stale(for: fullName)
+    }
+
+    func cachedRecentCommitDigest(fullName: String) -> Int? {
+        let now = Date()
+        let commits = self.recentCommitsCache.cached(for: fullName, now: now, maxAge: self.recentListCacheTTL)
+            ?? self.recentCommitsCache.stale(for: fullName)
+        guard let commits, commits.isEmpty == false else { return nil }
+        var hasher = Hasher()
+        for commit in commits {
+            hasher.combine(commit.sha)
+            hasher.combine(commit.authoredAt.timeIntervalSinceReferenceDate)
+        }
+        return hasher.finalize()
     }
 
     @objc func openContributors(_ sender: NSMenuItem) {
@@ -1200,11 +1218,12 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
             },
             render: { menu, _, boxed in
                 guard case let .commits(items) = boxed else { return }
-                for commit in items.prefix(self.recentListPreviewLimit) {
+                for commit in items.prefix(AppLimits.RepoCommits.previewLimit) {
                     self.addCommitMenuItem(commit, to: menu)
                 }
-                if items.count > self.recentListPreviewLimit {
-                    menu.addItem(self.moreCommitsMenuItem(items: items))
+                let remaining = Array(items.dropFirst(AppLimits.RepoCommits.previewLimit).prefix(AppLimits.RepoCommits.moreLimit))
+                if remaining.isEmpty == false {
+                    menu.addItem(self.moreCommitsMenuItem(items: remaining))
                 }
             }
         )
@@ -1346,7 +1365,12 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
 
         guard descriptor.needsRefresh(context.fullName, now, self.recentListCacheTTL) else { return }
         do {
-            let items = try await descriptor.load(context.fullName, owner, name, self.recentListLimit)
+            let items = try await descriptor.load(
+                context.fullName,
+                owner,
+                name,
+                self.recentListLimit(for: context.kind)
+            )
             self.populateRecentListMenu(
                 menu,
                 header: header,
@@ -1384,7 +1408,7 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
         guard case .loggedIn = self.appState.session.account else { return }
         guard fullNames.isEmpty == false else { return }
 
-        let kinds = self.recentMenuDescriptors().keys.filter { $0 != .commits }
+        let kinds = self.recentMenuDescriptors().keys
         for fullName in fullNames {
             for kind in kinds {
                 self.prefetchRecentList(fullName: fullName, kind: kind)
@@ -1399,7 +1423,16 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
         guard descriptor.needsRefresh(fullName, now, self.recentListCacheTTL) else { return }
         Task { @MainActor [weak self] in
             guard let self else { return }
-            _ = try? await descriptor.load(fullName, owner, name, self.recentListLimit)
+            _ = try? await descriptor.load(fullName, owner, name, self.recentListLimit(for: kind))
+        }
+    }
+
+    private func recentListLimit(for kind: RepoRecentMenuKind) -> Int {
+        switch kind {
+        case .commits:
+            return AppLimits.RepoCommits.totalLimit
+        default:
+            return self.recentListLimit
         }
     }
 

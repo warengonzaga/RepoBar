@@ -57,16 +57,30 @@ extension StatusBarMenuBuilder {
             menu.addItem(.separator())
         }
 
-        let commitCount = self.target.cachedRecentCommitCount(fullName: repo.title)
-        menu.addItem(self.recentListSubmenuItem(RecentListConfig(
-            title: "Commits",
-            systemImage: "arrow.turn.down.right",
-            fullName: repo.title,
-            kind: .commits,
-            openTitle: "Open Commits",
-            openAction: #selector(self.target.openCommits),
-            badgeText: commitCount.flatMap { $0 > 0 ? StatValueFormatter.compact($0) : nil }
-        )))
+        let commits = self.target.recentCommitsForMenu(fullName: repo.title)
+        menu.addItem(self.infoItem("Commits"))
+        if let commits {
+            if commits.isEmpty {
+                menu.addItem(self.infoItem("No commits"))
+            } else {
+                let preview = Array(commits.prefix(AppLimits.RepoCommits.previewLimit))
+                for commit in preview {
+                    menu.addItem(self.commitMenuItem(for: commit))
+                }
+                let remaining = Array(commits.dropFirst(preview.count).prefix(AppLimits.RepoCommits.moreLimit))
+                if remaining.isEmpty == false {
+                    menu.addItem(self.moreCommitsMenuItem(commits: remaining))
+                }
+            }
+        } else {
+            menu.addItem(self.infoItem("Loading…"))
+        }
+        menu.addItem(self.actionItem(
+            title: "Open Commits in GitHub",
+            action: #selector(self.target.openCommits),
+            represented: repo.title,
+            systemImage: "arrow.turn.down.right"
+        ))
         menu.addItem(self.recentListSubmenuItem(RecentListConfig(
             title: "Issues",
             systemImage: "exclamationmark.circle",

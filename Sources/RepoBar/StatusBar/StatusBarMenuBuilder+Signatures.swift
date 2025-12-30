@@ -175,6 +175,7 @@ struct RepoSubmenuCacheEntry {
 
 struct RepoRecentCountSignature: Hashable {
     let commits: Int?
+    let commitsDigest: Int?
     let releases: Int?
     let discussions: Int?
     let tags: Int?

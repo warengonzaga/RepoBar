@@ -23,8 +23,8 @@ extension StatusBarMenuBuilder {
             }
         )
         let submenu = self.repoSubmenu(for: repo, isPinned: isPinned)
-        if let cached = self.repoMenuItemCache[repo.title], let view = cached.view as? MenuItemHostingView {
-            view.updateHighlightableRootView(AnyView(card), showsSubmenuIndicator: true)
+        if let cached = self.repoMenuItemCache[repo.title] {
+            self.menuItemFactory.updateItem(cached, with: card, highlightable: true, showsSubmenuIndicator: true)
             cached.isEnabled = true
             cached.submenu = submenu
             cached.target = self.target
@@ -43,6 +43,7 @@ extension StatusBarMenuBuilder {
             heatmapRange: self.appState.session.heatmapRange,
             recentCounts: RepoRecentCountSignature(
                 commits: self.target.cachedRecentCommitCount(fullName: repo.title),
+                commitsDigest: self.target.cachedRecentCommitDigest(fullName: repo.title),
                 releases: self.target.cachedRecentListCount(fullName: repo.title, kind: .releases),
                 discussions: self.target.cachedRecentListCount(fullName: repo.title, kind: .discussions),
                 tags: self.target.cachedRecentListCount(fullName: repo.title, kind: .tags),
@@ -113,25 +114,15 @@ extension StatusBarMenuBuilder {
         highlightable: Bool = false,
         submenu: NSMenu? = nil
     ) -> NSMenuItem {
-        let item = NSMenuItem()
-        item.isEnabled = enabled
-        if highlightable {
-            let highlightState = MenuItemHighlightState()
-            let wrapped = MenuItemContainerView(
-                highlightState: highlightState,
-                showsSubmenuIndicator: submenu != nil
-            ) {
-                content
-            }
-            item.view = MenuItemHostingView(rootView: AnyView(wrapped), highlightState: highlightState)
-        } else {
-            item.view = MenuItemHostingView(rootView: AnyView(content))
-        }
-        item.submenu = submenu
-        if submenu != nil {
-            item.target = self.target
-            item.action = #selector(self.target.menuItemNoOp(_:))
-        }
+        let item = self.menuItemFactory.makeItem(
+            for: content,
+            enabled: enabled,
+            highlightable: highlightable,
+            showsSubmenuIndicator: submenu != nil,
+            submenu: submenu,
+            target: submenu != nil ? self.target : nil,
+            action: submenu != nil ? #selector(self.target.menuItemNoOp(_:)) : nil
+        )
         return item
     }
 }

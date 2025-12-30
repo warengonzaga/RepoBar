@@ -24,6 +24,12 @@ enum AppLimits {
         static let issueLabelChipLimit: Int = 6
     }
 
+    enum RepoCommits {
+        static let previewLimit: Int = 5
+        static let moreLimit: Int = 20
+        static let totalLimit: Int = previewLimit + moreLimit
+    }
+
     enum LocalRepo {
         static let mainMenuDirtyFileLimit: Int = 3
         static let submenuDirtyFileLimit: Int = 10
