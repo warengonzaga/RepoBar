@@ -1,4 +1,5 @@
 import Foundation
+import Security
 
 public struct LocalProjectsSnapshot: Equatable, Sendable {
     public let discoveredRepoCount: Int
@@ -246,14 +247,24 @@ private struct GitExecutableLocator: Sendable {
             .split(separator: ":")
             .map { "\($0)/git" }
 
-        let preferred = [
-            "/opt/homebrew/bin/git",
-            "/usr/local/bin/git"
-        ]
+        let preferred: [String] = if Self.isSandboxed {
+            ["/usr/bin/git"]
+        } else {
+            [
+                "/opt/homebrew/bin/git",
+                "/usr/local/bin/git"
+            ]
+        }
 
         let candidates = preferred + pathCandidates + ["/usr/bin/git"]
         let resolved = candidates.first { fileManager.isExecutableFile(atPath: $0) } ?? "/usr/bin/git"
         self.url = URL(fileURLWithPath: resolved)
+    }
+
+    private static var isSandboxed: Bool {
+        let task = SecTaskCreateFromSelf(nil)
+        let entitlement = SecTaskCopyValueForEntitlement(task, "com.apple.security.app-sandbox" as CFString, nil)
+        return (entitlement as? Bool) == true
     }
 }
 
