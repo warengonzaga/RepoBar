@@ -282,14 +282,7 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
 
     @objc func switchLocalWorktree(_ sender: NSMenuItem) {
         guard let action = sender.representedObject as? LocalWorktreeAction else { return }
-        let path = action.path.path
-        guard FileManager.default.fileExists(atPath: path) else {
-            self.presentAlert(title: "Worktree missing", message: "Could not find \(path).")
-            return
-        }
-        self.appState.session.settings.localProjects.preferredLocalPathsByFullName[action.fullName] = path
-        self.appState.persistSettings()
-        self.appState.refreshLocalProjects()
+        self.switchLocalWorktree(path: action.path, fullName: action.fullName)
     }
 
     @objc func createLocalBranch(_ sender: NSMenuItem) {
@@ -314,7 +307,10 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
             message: "Enter a branch name for the new worktree."
         )
         guard let branchName, branchName.isEmpty == false else { return }
-        let defaultPath = repoURL.deletingLastPathComponent().appendingPathComponent(branchName, isDirectory: true)
+        let folderName = self.appState.session.settings.localProjects.worktreeFolderName
+        let defaultPath = repoURL
+            .appendingPathComponent(folderName, isDirectory: true)
+            .appendingPathComponent(branchName, isDirectory: true)
         let pathText = self.promptForText(
             title: "Worktree folder",
             message: "Enter the folder path for the new worktree.",
@@ -322,6 +318,13 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
         )
         guard let pathText, pathText.isEmpty == false else { return }
         let worktreeURL = URL(fileURLWithPath: pathText, isDirectory: true)
+        do {
+            let parent = worktreeURL.deletingLastPathComponent()
+            try FileManager.default.createDirectory(at: parent, withIntermediateDirectories: true)
+        } catch {
+            self.presentAlert(title: "Create worktree failed", message: error.userFacingMessage)
+            return
+        }
         self.runLocalGitTask(
             title: "Create worktree failed",
             status: nil,
@@ -644,14 +647,17 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
                 return
             }
             for worktree in worktrees {
-                let name = worktree.branch ?? "Detached HEAD"
+                let branch = worktree.branch ?? "Detached"
                 let displayPath = PathFormatter.displayString(worktree.path.path)
-                let title = "\(name) — \(displayPath)"
-                let item = NSMenuItem(title: title, action: #selector(self.switchLocalWorktree), keyEquivalent: "")
-                item.target = self
-                item.representedObject = LocalWorktreeAction(path: worktree.path, fullName: fullName)
-                item.state = worktree.isCurrent ? .on : .off
-                menu.addItem(item)
+                let row = LocalWorktreeMenuRowView(
+                    path: displayPath,
+                    branch: branch,
+                    isCurrent: worktree.isCurrent,
+                    onSelect: { [weak self] in
+                        self?.switchLocalWorktree(path: worktree.path, fullName: fullName)
+                    }
+                )
+                menu.addItem(self.menuBuilder.viewItem(for: row, enabled: true, highlightable: true))
             }
             menu.update()
         case let .failure(error):
@@ -732,6 +738,17 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
         var url = host.appendingPathComponent(fullName)
         url.appendPathExtension("git")
         return url
+    }
+
+    private func switchLocalWorktree(path: URL, fullName: String) {
+        let pathString = path.path
+        guard FileManager.default.fileExists(atPath: pathString) else {
+            self.presentAlert(title: "Worktree missing", message: "Could not find \(pathString).")
+            return
+        }
+        self.appState.session.settings.localProjects.preferredLocalPathsByFullName[fullName] = pathString
+        self.appState.persistSettings()
+        self.appState.refreshLocalProjects()
     }
 
     private func showCheckoutProgress(fullName: String, destination: URL) {

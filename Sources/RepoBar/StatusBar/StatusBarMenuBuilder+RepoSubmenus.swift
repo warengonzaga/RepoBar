@@ -23,7 +23,6 @@ extension StatusBarMenuBuilder {
 
         if let local = repo.localStatus {
             menu.addItem(.separator())
-            menu.addItem(self.infoItem("Local State"))
             let stateView = LocalRepoStateMenuView(
                 status: local,
                 onSync: { [weak target] in target?.syncLocalRepo(local) },
@@ -38,7 +37,6 @@ extension StatusBarMenuBuilder {
             menu.addItem(.separator())
         } else {
             menu.addItem(.separator())
-            menu.addItem(self.infoItem("Local State"))
             menu.addItem(self.actionItem(
                 title: "Checkout Repo",
                 action: #selector(self.target.checkoutRepoFromMenu),

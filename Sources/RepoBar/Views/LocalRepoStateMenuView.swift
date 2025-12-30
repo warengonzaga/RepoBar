@@ -117,14 +117,13 @@ struct LocalRepoStateMenuView: View {
     }
 
     private func actionButton(title: String, systemImage: String, enabled: Bool, action: @escaping () -> Void) -> some View {
-        Button(action: action) {
-            Label(title, systemImage: systemImage)
-                .font(.caption2)
-        }
-        .buttonStyle(.plain)
-        .foregroundStyle(enabled ? MenuHighlightStyle.primary(self.isHighlighted) : .secondary)
-        .opacity(enabled ? 1 : 0.5)
-        .disabled(!enabled)
+        LocalRepoActionButton(
+            title: title,
+            systemImage: systemImage,
+            enabled: enabled,
+            isHighlighted: self.isHighlighted,
+            action: action
+        )
     }
 
     private func localSyncColor(for state: LocalSyncState) -> Color {
@@ -146,5 +145,38 @@ struct LocalRepoStateMenuView: View {
         case .unknown:
             return MenuHighlightStyle.secondary(self.isHighlighted)
         }
+    }
+}
+
+private struct LocalRepoActionButton: View {
+    let title: String
+    let systemImage: String
+    let enabled: Bool
+    let isHighlighted: Bool
+    let action: () -> Void
+
+    @State private var isHovered = false
+
+    var body: some View {
+        Button(action: self.action) {
+            Label(self.title, systemImage: self.systemImage)
+                .font(.caption2)
+                .padding(.horizontal, 6)
+                .padding(.vertical, 4)
+        }
+        .buttonStyle(.plain)
+        .foregroundStyle(self.enabled ? MenuHighlightStyle.primary(self.isHighlighted) : .secondary)
+        .background(self.hoverBackground, in: Capsule(style: .continuous))
+        .opacity(self.enabled ? 1 : 0.5)
+        .disabled(!self.enabled)
+        .onHover { self.isHovered = $0 }
+    }
+
+    private var hoverBackground: Color {
+        guard self.isHovered else { return .clear }
+        if self.isHighlighted {
+            return MenuHighlightStyle.selectionText.opacity(0.18)
+        }
+        return Color(nsColor: .controlAccentColor).opacity(0.12)
     }
 }

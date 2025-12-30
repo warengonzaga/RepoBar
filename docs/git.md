@@ -42,3 +42,6 @@ RepoBar surfaces local git state inside each repo submenu and exposes a set of a
 - **Branch switch**: `git switch <branch>`.
 - **Worktree switch**: sets the preferred local worktree path for that repo so the menu highlights that path next refresh.
 - If switching fails, show an alert and abort.
+
+## Worktree defaults
+- New worktrees are created under the configured worktree folder (default `.work`).

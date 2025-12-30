@@ -381,6 +381,15 @@ struct AdvancedSettingsView: View {
                     }
 
                 HStack {
+                    Text("Worktree folder")
+                    Spacer()
+                    TextField("", text: self.worktreeFolderBinding)
+                        .frame(width: 120)
+                        .multilineTextAlignment(.trailing)
+                        .disabled(self.session.settings.localProjects.rootPath == nil)
+                }
+
+                HStack {
                     Text("Fetch interval")
                     Spacer()
                     Picker("", selection: self.$session.settings.localProjects.fetchInterval) {
@@ -536,6 +545,19 @@ struct AdvancedSettingsView: View {
 
     private var isGhosttySelected: Bool {
         TerminalApp.resolve(self.session.settings.localProjects.preferredTerminal) == .ghostty
+    }
+
+    private var worktreeFolderBinding: Binding<String> {
+        Binding(
+            get: {
+                self.session.settings.localProjects.worktreeFolderName
+            },
+            set: { value in
+                let trimmed = value.trimmingCharacters(in: .whitespacesAndNewlines)
+                self.session.settings.localProjects.worktreeFolderName = trimmed.isEmpty ? ".work" : trimmed
+                self.appState.persistSettings()
+            }
+        )
     }
 
     private func pickProjectFolder() {
