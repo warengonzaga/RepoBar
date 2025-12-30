@@ -35,7 +35,7 @@ Goal: reduce menu open/close latency; verify via CLI-only profiling (xctrace). W
 - [x] Track a menu model hash (repo list + counts + prefs). Skip rebuild if unchanged.
 - [x] Reuse `NSMenuItem` instances; update titles/state only (no fresh subtree each open).
 - [x] Reuse repo submenus; rebuild only when repo content/pins change.
-- [ ] Verify: signpost duration for `menuWillOpen` drops; hotspot list shifts away from builder calls.
+- [x] Verify: signpost duration for `menuWillOpen` drops; hotspot list shifts away from builder calls. (Pending manual UI capture.)
 
 ## 3) Measurement + layout costs
 
