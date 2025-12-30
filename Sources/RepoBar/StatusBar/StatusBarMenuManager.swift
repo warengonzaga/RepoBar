@@ -1383,28 +1383,22 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
     ) {
         menu.removeAllItems()
 
-        let open = NSMenuItem(title: header.title, action: header.action, keyEquivalent: "")
-        open.target = self
-        open.representedObject = header.representedObject
-        if let systemImage = header.systemImage, let image = NSImage(systemSymbolName: systemImage, accessibilityDescription: nil) {
-            image.size = NSSize(width: 14, height: 14)
-            image.isTemplate = true
-            open.image = image
-        }
-        open.isEnabled = header.action != nil
-        menu.addItem(open)
+        menu.addItem(self.makeListItem(
+            title: header.title,
+            action: header.action,
+            representedObject: header.representedObject,
+            systemImage: header.systemImage,
+            isEnabled: header.action != nil
+        ))
 
         for action in actions {
-            let item = NSMenuItem(title: action.title, action: action.action, keyEquivalent: "")
-            item.target = self
-            item.representedObject = action.representedObject
-            item.isEnabled = action.isEnabled
-            if let systemImage = action.systemImage, let image = NSImage(systemSymbolName: systemImage, accessibilityDescription: nil) {
-                image.size = NSSize(width: 14, height: 14)
-                image.isTemplate = true
-                item.image = image
-            }
-            menu.addItem(item)
+            menu.addItem(self.makeListItem(
+                title: action.title,
+                action: action.action,
+                representedObject: action.representedObject,
+                systemImage: action.systemImage,
+                isEnabled: action.isEnabled
+            ))
         }
 
         menu.addItem(.separator())
@@ -1414,15 +1408,23 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
 
         switch content {
         case let .message(text):
-            let item = NSMenuItem(title: text, action: nil, keyEquivalent: "")
-            item.isEnabled = false
-            menu.addItem(item)
+            menu.addItem(self.makeListItem(
+                title: text,
+                action: nil,
+                representedObject: nil,
+                systemImage: nil,
+                isEnabled: false
+            ))
         case let .items(isEmpty, emptyTitle, render):
             if isEmpty {
                 if let emptyTitle {
-                    let item = NSMenuItem(title: emptyTitle, action: nil, keyEquivalent: "")
-                    item.isEnabled = false
-                    menu.addItem(item)
+                    menu.addItem(self.makeListItem(
+                        title: emptyTitle,
+                        action: nil,
+                        representedObject: nil,
+                        systemImage: nil,
+                        isEnabled: false
+                    ))
                 }
             } else {
                 render(menu)
@@ -1473,10 +1475,38 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
         self.populateListMenu(menu, header: listHeader, actions: listActions, extras: extras, content: listContent)
     }
 
+    private func makeListItem(
+        title: String,
+        action: Selector?,
+        representedObject: Any?,
+        systemImage: String?,
+        isEnabled: Bool
+    ) -> NSMenuItem {
+        let item = NSMenuItem(title: title, action: action, keyEquivalent: "")
+        item.target = self
+        item.representedObject = representedObject
+        item.isEnabled = isEnabled
+        if let systemImage {
+            self.applyMenuItemSymbol(systemImage, to: item)
+        }
+        return item
+    }
+
+    private func applyMenuItemSymbol(_ systemImage: String, to item: NSMenuItem) {
+        guard let image = NSImage(systemSymbolName: systemImage, accessibilityDescription: nil) else { return }
+        image.size = NSSize(width: 14, height: 14)
+        image.isTemplate = true
+        item.image = image
+    }
+
     private func addEmptyListItem(_ title: String, to menu: NSMenu) {
-        let item = NSMenuItem(title: title, action: nil, keyEquivalent: "")
-        item.isEnabled = false
-        menu.addItem(item)
+        menu.addItem(self.makeListItem(
+            title: title,
+            action: nil,
+            representedObject: nil,
+            systemImage: nil,
+            isEnabled: false
+        ))
     }
 
     private func recentListExtras(for context: RepoRecentMenuContext, items: RecentMenuItems?) -> [NSMenuItem] {
