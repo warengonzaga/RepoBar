@@ -21,6 +21,23 @@ extension StatusBarMenuBuilder {
         )
         menu.addItem(self.viewItem(for: openRow, enabled: true, highlightable: true))
 
+        if let local = repo.localStatus {
+            menu.addItem(.separator())
+            menu.addItem(self.infoItem("Local State"))
+            let stateView = LocalRepoStateMenuView(
+                status: local,
+                onSync: { [weak target] in target?.syncLocalRepo(local) },
+                onRebase: { [weak target] in target?.rebaseLocalRepo(local) },
+                onReset: { [weak target] in target?.resetLocalRepo(local) },
+                onOpenFinder: { [weak target] in target?.openLocalFinder(local.path) },
+                onOpenTerminal: { [weak target] in target?.openLocalTerminal(local.path) }
+            )
+            menu.addItem(self.viewItem(for: stateView, enabled: true))
+            menu.addItem(self.localBranchesSubmenuItem(for: local, fullName: repo.title))
+            menu.addItem(self.localWorktreesSubmenuItem(for: local, fullName: repo.title))
+            menu.addItem(.separator())
+        }
+
         menu.addItem(self.recentListSubmenuItem(RecentListConfig(
             title: "Issues",
             systemImage: "exclamationmark.circle",
@@ -108,20 +125,6 @@ extension StatusBarMenuBuilder {
                 systemImage: "clock.arrow.circlepath"
             ))
         }
-        if let local = repo.localStatus {
-            menu.addItem(self.actionItem(
-                title: "Open in Finder",
-                action: #selector(self.target.openLocalFinder),
-                represented: local.path,
-                systemImage: "folder"
-            ))
-            menu.addItem(self.actionItem(
-                title: "Open in Terminal",
-                action: #selector(self.target.openLocalTerminal),
-                represented: local.path,
-                systemImage: "terminal"
-            ))
-        }
 
         if settings.heatmap.display == .submenu, !repo.heatmap.isEmpty {
             let filtered = HeatmapFilter.filter(repo.heatmap, range: self.appState.session.heatmapRange)
@@ -201,6 +204,42 @@ extension StatusBarMenuBuilder {
         }
 
         return menu
+    }
+
+    private func localBranchesSubmenuItem(for local: LocalRepoStatus, fullName: String) -> NSMenuItem {
+        let submenu = NSMenu()
+        submenu.autoenablesItems = false
+        submenu.delegate = self.target
+        self.target.registerLocalBranchMenu(submenu, repoPath: local.path, fullName: fullName)
+        submenu.addItem(self.loadingItem())
+
+        let row = RecentListSubmenuRowView(
+            title: "Switch Branch",
+            systemImage: "point.topleft.down.curvedto.point.bottomright.up",
+            badgeText: nil
+        )
+        return self.viewItem(for: row, enabled: true, highlightable: true, submenu: submenu)
+    }
+
+    private func localWorktreesSubmenuItem(for local: LocalRepoStatus, fullName: String) -> NSMenuItem {
+        let submenu = NSMenu()
+        submenu.autoenablesItems = false
+        submenu.delegate = self.target
+        self.target.registerLocalWorktreeMenu(submenu, repoPath: local.path, fullName: fullName)
+        submenu.addItem(self.loadingItem())
+
+        let row = RecentListSubmenuRowView(
+            title: "Switch Worktree",
+            systemImage: "square.stack.3d.down.right",
+            badgeText: nil
+        )
+        return self.viewItem(for: row, enabled: true, highlightable: true, submenu: submenu)
+    }
+
+    private func loadingItem() -> NSMenuItem {
+        let item = NSMenuItem(title: "Loading…", action: nil, keyEquivalent: "")
+        item.isEnabled = false
+        return item
     }
 
     private struct RecentListConfig {

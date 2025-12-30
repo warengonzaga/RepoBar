@@ -205,9 +205,13 @@ final class AppState {
                 let localSnapshot = await self.localRepoManager.snapshot(
                     rootPath: localSettings.rootPath,
                     rootBookmarkData: localSettings.rootBookmarkData,
-                    autoSyncEnabled: localSettings.autoSyncEnabled,
-                    matchRepoNames: matchNames,
-                    forceRescan: false
+                    options: LocalRepoManager.SnapshotOptions(
+                        autoSyncEnabled: localSettings.autoSyncEnabled,
+                        fetchInterval: localSettings.fetchInterval.seconds,
+                        preferredPathsByFullName: localSettings.preferredLocalPathsByFullName,
+                        matchRepoNames: matchNames,
+                        forceRescan: false
+                    )
                 )
                 await MainActor.run {
                     self.session.repositories = []
@@ -237,9 +241,13 @@ final class AppState {
                 await self.localRepoManager.snapshot(
                     rootPath: localSettings.rootPath,
                     rootBookmarkData: localSettings.rootBookmarkData,
-                    autoSyncEnabled: localSettings.autoSyncEnabled,
-                    matchRepoNames: matchNames,
-                    forceRescan: false
+                    options: LocalRepoManager.SnapshotOptions(
+                        autoSyncEnabled: localSettings.autoSyncEnabled,
+                        fetchInterval: localSettings.fetchInterval.seconds,
+                        preferredPathsByFullName: localSettings.preferredLocalPathsByFullName,
+                        matchRepoNames: matchNames,
+                        forceRescan: false
+                    )
                 )
             }
             let targets = self.selectMenuTargets(from: ordered)
@@ -299,9 +307,13 @@ final class AppState {
             let localSnapshot = await self.localRepoManager.snapshot(
                 rootPath: settings.rootPath,
                 rootBookmarkData: settings.rootBookmarkData,
-                autoSyncEnabled: settings.autoSyncEnabled,
-                matchRepoNames: matchNames,
-                forceRescan: forceRescan
+                options: LocalRepoManager.SnapshotOptions(
+                    autoSyncEnabled: settings.autoSyncEnabled,
+                    fetchInterval: settings.fetchInterval.seconds,
+                    preferredPathsByFullName: settings.preferredLocalPathsByFullName,
+                    matchRepoNames: matchNames,
+                    forceRescan: forceRescan
+                )
             )
             await MainActor.run {
                 self.session.localRepoIndex = localSnapshot.repoIndex

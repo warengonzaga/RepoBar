@@ -46,10 +46,37 @@ public struct LocalProjectsSettings: Equatable, Codable {
     public var rootPath: String?
     public var rootBookmarkData: Data?
     public var autoSyncEnabled: Bool = true
+    public var fetchInterval: LocalProjectsRefreshInterval = .fiveMinutes
     public var preferredTerminal: String?
     public var ghosttyOpenMode: GhosttyOpenMode = .tab
+    public var preferredLocalPathsByFullName: [String: String] = [:]
 
     public init() {}
+}
+
+public enum LocalProjectsRefreshInterval: String, CaseIterable, Equatable, Codable {
+    case oneMinute
+    case twoMinutes
+    case fiveMinutes
+    case fifteenMinutes
+
+    public var seconds: TimeInterval {
+        switch self {
+        case .oneMinute: 60
+        case .twoMinutes: 120
+        case .fiveMinutes: 300
+        case .fifteenMinutes: 900
+        }
+    }
+
+    public var label: String {
+        switch self {
+        case .oneMinute: "1 minute"
+        case .twoMinutes: "2 minutes"
+        case .fiveMinutes: "5 minutes"
+        case .fifteenMinutes: "15 minutes"
+        }
+    }
 }
 
 public enum GhosttyOpenMode: String, CaseIterable, Equatable, Codable {

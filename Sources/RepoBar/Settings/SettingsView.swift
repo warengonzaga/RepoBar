@@ -374,6 +374,23 @@ struct AdvancedSettingsView: View {
                     }
 
                 HStack {
+                    Text("Fetch interval")
+                    Spacer()
+                    Picker("", selection: self.$session.settings.localProjects.fetchInterval) {
+                        ForEach(LocalProjectsRefreshInterval.allCases, id: \.self) { interval in
+                            Text(interval.label).tag(interval)
+                        }
+                    }
+                    .pickerStyle(.menu)
+                    .labelsHidden()
+                    .disabled(self.session.settings.localProjects.rootPath == nil)
+                    .onChange(of: self.session.settings.localProjects.fetchInterval) { _, _ in
+                        self.appState.persistSettings()
+                        self.appState.refreshLocalProjects()
+                    }
+                }
+
+                HStack {
                     Text("Preferred Terminal")
                     Spacer()
                     Picker("", selection: self.preferredTerminalBinding) {
@@ -410,7 +427,7 @@ struct AdvancedSettingsView: View {
             } header: {
                 Text("Local Projects")
             } footer: {
-                Text("Scans two levels deep under the folder and fast-forward pulls clean repos.")
+                Text("Scans two levels deep under the folder, fetches periodically, and can fast-forward pull clean repos.")
             }
 
             #if DEBUG

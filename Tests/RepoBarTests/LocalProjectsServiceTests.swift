@@ -181,6 +181,62 @@ struct LocalProjectsServiceTests {
         #expect(index.status(for: repo) != nil)
         #expect(index.status(forFullName: "STEIPETE/CODEXBAR") != nil)
     }
+
+    @Test
+    func localRepoIndex_prefersPreferredPath() {
+        let primary = LocalRepoStatus(
+            path: URL(fileURLWithPath: "/tmp/repo-a"),
+            name: "Repo",
+            fullName: nil,
+            branch: "main",
+            isClean: true,
+            aheadCount: 0,
+            behindCount: 0,
+            syncState: .synced
+        )
+        let secondary = LocalRepoStatus(
+            path: URL(fileURLWithPath: "/tmp/repo-b"),
+            name: "Repo",
+            fullName: nil,
+            branch: "feature",
+            isClean: true,
+            aheadCount: 0,
+            behindCount: 0,
+            syncState: .synced
+        )
+        let index = LocalRepoIndex(
+            statuses: [primary, secondary],
+            preferredPathsByFullName: ["owner/repo": secondary.path.path]
+        )
+
+        let selected = index.status(forFullName: "owner/repo")
+        #expect(selected?.path.path == secondary.path.path)
+    }
+
+    @Test
+    func snapshot_includesWorktreeNameForWorktrees() async throws {
+        let root = try makeTempDirectory()
+        defer { try? FileManager.default.removeItem(at: root) }
+
+        let repo = root.appendingPathComponent("repo", isDirectory: true)
+        try FileManager.default.createDirectory(at: repo, withIntermediateDirectories: true)
+        try initializeRepo(at: repo, origin: "git@github.com:foo/repo.git")
+
+        let worktree = root.appendingPathComponent("repo-worktree", isDirectory: true)
+        _ = try runGit(["worktree", "add", worktree.path, "-b", "feature"], in: repo)
+
+        let snapshot = await LocalProjectsService().snapshot(
+            rootPath: root.path,
+            maxDepth: 1,
+            autoSyncEnabled: false,
+            concurrencyLimit: 1
+        )
+
+        let worktreeStatus = snapshot.statuses.first(where: { $0.path.lastPathComponent == "repo-worktree" })
+        #expect(worktreeStatus != nil)
+        #expect(worktreeStatus?.worktreeName != nil)
+        #expect(worktreeStatus?.branch == "feature")
+    }
 }
 
 private func makeTempDirectory() throws -> URL {

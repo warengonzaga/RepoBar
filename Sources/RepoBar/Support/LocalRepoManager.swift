@@ -7,6 +7,7 @@ actor LocalRepoManager {
     private let statusCacheTTL: TimeInterval = 2 * 60
     private var discoveryCache: [String: DiscoveryCacheEntry] = [:]
     private var statusCache: [String: StatusCacheEntry] = [:]
+    private var lastFetchByPath: [String: Date] = [:]
 
     struct SnapshotResult: Sendable {
         let discoveredCount: Int
@@ -14,12 +15,18 @@ actor LocalRepoManager {
         let accessDenied: Bool
     }
 
+    struct SnapshotOptions: Sendable {
+        let autoSyncEnabled: Bool
+        let fetchInterval: TimeInterval
+        let preferredPathsByFullName: [String: String]
+        let matchRepoNames: Set<String>
+        let forceRescan: Bool
+    }
+
     func snapshot(
         rootPath: String?,
         rootBookmarkData: Data?,
-        autoSyncEnabled: Bool,
-        matchRepoNames: Set<String>,
-        forceRescan: Bool
+        options: SnapshotOptions
     ) async -> SnapshotResult {
         guard let rootPath,
               rootPath.isEmpty == false
@@ -53,36 +60,55 @@ actor LocalRepoManager {
             rootURL: rootURL,
             resolvedRoot: resolvedRoot,
             now: now,
-            forceRescan: forceRescan
+            forceRescan: options.forceRescan
         )
 
         let (cachedStatuses, refreshRoots) = self.partitionStatusesToRefresh(
             repoRoots: repoRoots,
-            matchRepoNames: matchRepoNames,
             now: now,
-            forceRefresh: forceRescan,
-            autoSyncEnabled: autoSyncEnabled
+            options: options
+        )
+
+        let fetchTargets = self.fetchTargets(
+            repoRoots: refreshRoots,
+            fetchInterval: options.fetchInterval,
+            now: now
         )
 
         let refreshedSnapshot = await LocalProjectsService().snapshot(
             repoRoots: refreshRoots,
-            autoSyncEnabled: autoSyncEnabled,
+            autoSyncEnabled: options.autoSyncEnabled,
             includeOnlyRepoNames: nil,
-            concurrencyLimit: 6
+            concurrencyLimit: 6,
+            fetchTargets: fetchTargets
         )
 
-        for status in refreshedSnapshot.statuses {
+        for path in refreshedSnapshot.fetchedPaths {
+            self.lastFetchByPath[path.path] = now
+        }
+
+        let enrichedRefreshed = refreshedSnapshot.statuses.map { status in
+            status.withLastFetch(self.lastFetchByPath[status.path.path])
+        }
+
+        for status in enrichedRefreshed {
             self.statusCache[status.path.path] = StatusCacheEntry(status: status, updatedAt: now)
         }
 
-        for status in refreshedSnapshot.syncedStatuses {
+        for status in refreshedSnapshot.syncAttemptedStatuses {
             await self.notifier.notifySync(for: status)
         }
 
-        let allStatuses = cachedStatuses + refreshedSnapshot.statuses
+        let enrichedCached = cachedStatuses.map { status in
+            status.withLastFetch(self.lastFetchByPath[status.path.path])
+        }
+        let allStatuses = enrichedCached + enrichedRefreshed
         return SnapshotResult(
             discoveredCount: repoRoots.count,
-            repoIndex: LocalRepoIndex(statuses: allStatuses),
+            repoIndex: LocalRepoIndex(
+                statuses: allStatuses,
+                preferredPathsByFullName: options.preferredPathsByFullName
+            ),
             accessDenied: false
         )
     }
@@ -114,14 +140,12 @@ actor LocalRepoManager {
 
     private func partitionStatusesToRefresh(
         repoRoots: [URL],
-        matchRepoNames: Set<String>,
         now: Date,
-        forceRefresh: Bool,
-        autoSyncEnabled: Bool
+        options: SnapshotOptions
     ) -> (cached: [LocalRepoStatus], refresh: [URL]) {
         guard repoRoots.isEmpty == false else { return ([], []) }
 
-        let matchKeys = Set(matchRepoNames.map { $0.lowercased() })
+        let matchKeys = Set(options.matchRepoNames.map { $0.lowercased() })
         let interesting: [URL] = if matchKeys.isEmpty {
             []
         } else {
@@ -140,12 +164,17 @@ actor LocalRepoManager {
                 continue
             }
 
-            if forceRefresh {
+            if options.forceRescan {
                 refresh.append(repoURL)
                 continue
             }
 
-            if autoSyncEnabled, entry.status.canAutoSync {
+            if options.autoSyncEnabled, entry.status.canAutoSync {
+                refresh.append(repoURL)
+                continue
+            }
+
+            if options.fetchInterval > 0, self.needsFetch(for: repoURL, now: now, interval: options.fetchInterval) {
                 refresh.append(repoURL)
                 continue
             }
@@ -158,5 +187,21 @@ actor LocalRepoManager {
         }
 
         return (cached, refresh)
+    }
+
+    private func needsFetch(for repoURL: URL, now: Date, interval: TimeInterval) -> Bool {
+        guard interval > 0 else { return false }
+        let lastFetch = self.lastFetchByPath[repoURL.path]
+        guard let lastFetch else { return true }
+        return now.timeIntervalSince(lastFetch) >= interval
+    }
+
+    private func fetchTargets(
+        repoRoots: [URL],
+        fetchInterval: TimeInterval,
+        now: Date
+    ) -> Set<URL> {
+        guard fetchInterval > 0 else { return [] }
+        return Set(repoRoots.filter { self.needsFetch(for: $0, now: now, interval: fetchInterval) })
     }
 }

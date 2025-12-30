@@ -17,6 +17,7 @@ Goal: map a local “project folder” (e.g. `~/Projects`) to GitHub repos shown
 - **Found count**: show how many git repos are discovered under the folder (fast, even if no GitHub match).
 - **Rescan**: icon button (`arrow.clockwise`); triggers a forced rescan + status refresh; shows “Scanning…” while running.
 - **Auto-sync clean repos**: when enabled, attempts `git pull --ff-only` on eligible repos.
+- **Fetch interval**: controls how often RepoBar runs `git fetch --prune` to refresh upstream state.
 - **Preferred Terminal**: choose terminal app for “Open in Terminal” actions (defaults to Ghostty if installed, else Terminal.app).
   - Ghostty opens a new window via AppleScript; macOS will prompt for Automation/System Events access.
   - Ghostty open mode: New Window (AppleScript) or Tab (standard open).
@@ -28,8 +29,8 @@ Goal: map a local “project folder” (e.g. `~/Projects`) to GitHub repos shown
   - Open in Terminal (preferred terminal)
 
 ### Notifications
-- Fire a local notification only on **successful sync** where `HEAD` changed (i.e. pull actually advanced).
-- No notification on failure/no-op.
+- Fire a local notification on **successful sync** (auto or manual).
+- No notification on failure.
 
 ## Scanning & Matching
 

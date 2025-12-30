@@ -10,6 +10,9 @@ public struct LocalRepoStatus: Equatable, Sendable {
     public let behindCount: Int?
     public let syncState: LocalSyncState
     public let dirtyCounts: LocalDirtyCounts?
+    public let worktreeName: String?
+    public let upstreamBranch: String?
+    public let lastFetchAt: Date?
 
     public init(
         path: URL,
@@ -20,7 +23,10 @@ public struct LocalRepoStatus: Equatable, Sendable {
         aheadCount: Int?,
         behindCount: Int?,
         syncState: LocalSyncState,
-        dirtyCounts: LocalDirtyCounts? = nil
+        dirtyCounts: LocalDirtyCounts? = nil,
+        worktreeName: String? = nil,
+        upstreamBranch: String? = nil,
+        lastFetchAt: Date? = nil
     ) {
         self.path = path
         self.name = name
@@ -31,6 +37,9 @@ public struct LocalRepoStatus: Equatable, Sendable {
         self.behindCount = behindCount
         self.syncState = syncState
         self.dirtyCounts = dirtyCounts
+        self.worktreeName = worktreeName
+        self.upstreamBranch = upstreamBranch
+        self.lastFetchAt = lastFetchAt
     }
 
     public var displayName: String { self.fullName ?? self.name }
@@ -61,6 +70,23 @@ public struct LocalRepoStatus: Equatable, Sendable {
             && self.syncState == .behind
             && (self.aheadCount ?? 0) == 0
             && self.branch != "detached"
+    }
+
+    public func withLastFetch(_ date: Date?) -> LocalRepoStatus {
+        LocalRepoStatus(
+            path: self.path,
+            name: self.name,
+            fullName: self.fullName,
+            branch: self.branch,
+            isClean: self.isClean,
+            aheadCount: self.aheadCount,
+            behindCount: self.behindCount,
+            syncState: self.syncState,
+            dirtyCounts: self.dirtyCounts,
+            worktreeName: self.worktreeName,
+            upstreamBranch: self.upstreamBranch,
+            lastFetchAt: date
+        )
     }
 }
 
@@ -135,16 +161,20 @@ public struct LocalRepoIndex: Equatable, Sendable {
     public var byName: [String: [LocalRepoStatus]] = [:]
     public var byFullNameLowercased: [String: [LocalRepoStatus]] = [:]
     public var byNameLowercased: [String: [LocalRepoStatus]] = [:]
+    public var byPath: [String: LocalRepoStatus] = [:]
+    public var preferredPathsByFullName: [String: String] = [:]
 
     public static let empty = LocalRepoIndex()
 
     public init() {}
 
-    public init(statuses: [LocalRepoStatus]) {
+    public init(statuses: [LocalRepoStatus], preferredPathsByFullName: [String: String] = [:]) {
         self.all = statuses
+        self.preferredPathsByFullName = preferredPathsByFullName
         self.byFullName = Dictionary(uniqueKeysWithValues: statuses.compactMap { status in
             status.fullName.map { ($0, status) }
         })
+        self.byPath = Dictionary(uniqueKeysWithValues: statuses.map { ($0.path.path, $0) })
         var nameIndex: [String: [LocalRepoStatus]] = [:]
         var nameIndexLowercased: [String: [LocalRepoStatus]] = [:]
         var fullNameIndexLowercased: [String: [LocalRepoStatus]] = [:]
@@ -161,6 +191,9 @@ public struct LocalRepoIndex: Equatable, Sendable {
     }
 
     public func status(for repo: Repository) -> LocalRepoStatus? {
+        if let preferred = self.preferredPathsByFullName[repo.fullName], let status = self.byPath[preferred] {
+            return status
+        }
         if let exact = self.byFullName[repo.fullName] { return exact }
         if let match = self.uniqueStatus(in: self.byFullNameLowercased, forKey: repo.fullName.lowercased()) {
             return match
@@ -169,6 +202,9 @@ public struct LocalRepoIndex: Equatable, Sendable {
     }
 
     public func status(forFullName fullName: String) -> LocalRepoStatus? {
+        if let preferred = self.preferredPathsByFullName[fullName], let status = self.byPath[preferred] {
+            return status
+        }
         if let exact = self.byFullName[fullName] { return exact }
         if let match = self.uniqueStatus(in: self.byFullNameLowercased, forKey: fullName.lowercased()) {
             return match

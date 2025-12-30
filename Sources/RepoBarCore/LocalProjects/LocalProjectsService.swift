@@ -4,11 +4,21 @@ public struct LocalProjectsSnapshot: Equatable, Sendable {
     public let discoveredRepoCount: Int
     public let statuses: [LocalRepoStatus]
     public let syncedStatuses: [LocalRepoStatus]
+    public let syncAttemptedStatuses: [LocalRepoStatus]
+    public let fetchedPaths: Set<URL>
 
-    public init(discoveredRepoCount: Int, statuses: [LocalRepoStatus], syncedStatuses: [LocalRepoStatus]) {
+    public init(
+        discoveredRepoCount: Int,
+        statuses: [LocalRepoStatus],
+        syncedStatuses: [LocalRepoStatus],
+        syncAttemptedStatuses: [LocalRepoStatus] = [],
+        fetchedPaths: Set<URL> = []
+    ) {
         self.discoveredRepoCount = discoveredRepoCount
         self.statuses = statuses
         self.syncedStatuses = syncedStatuses
+        self.syncAttemptedStatuses = syncAttemptedStatuses
+        self.fetchedPaths = fetchedPaths
     }
 }
 
@@ -71,12 +81,13 @@ public struct LocalProjectsService {
         autoSyncEnabled: Bool,
         maxRepoCount: Int? = nil,
         includeOnlyRepoNames: Set<String>? = nil,
-        concurrencyLimit: Int = 8
+        concurrencyLimit: Int = 8,
+        fetchTargets: Set<URL> = []
     ) async -> LocalProjectsSnapshot {
         let git = GitRunner()
 
         guard repoRoots.isEmpty == false else {
-            return LocalProjectsSnapshot(discoveredRepoCount: 0, statuses: [], syncedStatuses: [])
+            return LocalProjectsSnapshot(discoveredRepoCount: 0, statuses: [], syncedStatuses: [], fetchedPaths: [])
         }
 
         let filtered = includeOnlyRepoNames.map { allowList in
@@ -97,6 +108,8 @@ public struct LocalProjectsService {
         struct Processed {
             let status: LocalRepoStatus
             let didSync: Bool
+            let didSyncAttempt: Bool
+            let didFetch: Bool
         }
 
         func loadStatus(at repoURL: URL) -> LocalRepoStatus? {
@@ -109,6 +122,8 @@ public struct LocalProjectsService {
             let remote = remoteInfo(at: repoURL, git: git)
             let repoName = remote?.name ?? repoURL.lastPathComponent
             let fullName = remote?.fullName
+            let worktreeName = worktreeName(at: repoURL)
+            let upstreamBranch = upstreamBranch(at: repoURL, git: git)
             return LocalRepoStatus(
                 path: repoURL,
                 name: repoName,
@@ -118,8 +133,14 @@ public struct LocalProjectsService {
                 aheadCount: ahead,
                 behindCount: behind,
                 syncState: syncState,
-                dirtyCounts: dirtyCounts
+                dirtyCounts: dirtyCounts,
+                worktreeName: worktreeName,
+                upstreamBranch: upstreamBranch
             )
+        }
+
+        func fetchPrune(at repoURL: URL) -> Bool {
+            (try? git.run(["fetch", "--prune"], in: repoURL)) != nil
         }
 
         func pullFastForward(at repoURL: URL) -> Bool {
@@ -140,9 +161,18 @@ public struct LocalProjectsService {
                     group.addTask {
                         guard var status = loadStatus(at: repoURL) else { return nil }
                         var didSync = false
+                        var didSyncAttempt = false
+                        var didFetch = false
+                        if fetchTargets.contains(repoURL) {
+                            didFetch = fetchPrune(at: repoURL)
+                            if didFetch {
+                                status = loadStatus(at: repoURL) ?? status
+                            }
+                        }
                         if autoSyncEnabled, status.isClean, status.branch != "detached" {
                             let before = headSHA(at: repoURL)
                             if pullFastForward(at: repoURL) {
+                                didSyncAttempt = true
                                 let after = headSHA(at: repoURL)
                                 if let before, let after, before != after {
                                     didSync = true
@@ -150,7 +180,7 @@ public struct LocalProjectsService {
                                 }
                             }
                         }
-                        return Processed(status: status, didSync: didSync)
+                        return Processed(status: status, didSync: didSync, didSyncAttempt: didSyncAttempt, didFetch: didFetch)
                     }
                 }
 
@@ -164,6 +194,8 @@ public struct LocalProjectsService {
 
         var statuses = processed.map(\.status)
         let syncedStatuses = processed.filter(\.didSync).map(\.status)
+        let syncAttemptedStatuses = processed.filter(\.didSyncAttempt).map(\.status)
+        let fetchedPaths = Set(processed.filter(\.didFetch).map(\.status.path))
 
         statuses.sort { lhs, rhs in
             if lhs.displayName != rhs.displayName { return lhs.displayName < rhs.displayName }
@@ -173,7 +205,9 @@ public struct LocalProjectsService {
         return LocalProjectsSnapshot(
             discoveredRepoCount: repoRoots.count,
             statuses: statuses,
-            syncedStatuses: syncedStatuses
+            syncedStatuses: syncedStatuses,
+            syncAttemptedStatuses: syncAttemptedStatuses,
+            fetchedPaths: fetchedPaths
         )
     }
 
@@ -360,4 +394,27 @@ private func remoteInfo(at repoURL: URL, git: GitRunner) -> GitRemote? {
         return nil
     }
     return GitRemote.parse(raw.trimmingCharacters(in: .whitespacesAndNewlines))
+}
+
+private func upstreamBranch(at repoURL: URL, git: GitRunner) -> String? {
+    guard let raw = try? git.run(["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"], in: repoURL) else {
+        return nil
+    }
+    let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+    return trimmed.isEmpty ? nil : trimmed
+}
+
+private func worktreeName(at repoURL: URL) -> String? {
+    let gitPath = repoURL.appendingPathComponent(".git")
+    var isDirectory: ObjCBool = false
+    guard FileManager.default.fileExists(atPath: gitPath.path, isDirectory: &isDirectory),
+          isDirectory.boolValue == false
+    else {
+        return nil
+    }
+    guard let contents = try? String(contentsOf: gitPath, encoding: .utf8) else { return nil }
+    guard let range = contents.range(of: "worktrees/") else { return nil }
+    let suffix = contents[range.upperBound...]
+    let name = suffix.split(whereSeparator: { $0 == "\n" || $0 == "\r" || $0 == "/" }).first
+    return name.map(String.init)
 }

@@ -149,8 +149,11 @@ struct RepoSubmenuSignature: Hashable {
     let activityURLPresent: Bool
     let localPath: String?
     let localBranch: String?
+    let localWorktreeName: String?
     let localSyncState: LocalSyncState?
     let localDirtySummary: String?
+    let localUpstream: String?
+    let localLastFetchAt: TimeInterval?
     let trafficVisitors: Int?
     let trafficCloners: Int?
     let heatmapDisplay: HeatmapDisplay
@@ -175,8 +178,11 @@ struct RepoSubmenuSignature: Hashable {
         self.activityURLPresent = repo.activityURL != nil
         self.localPath = repo.localStatus?.path.path
         self.localBranch = repo.localStatus?.branch
+        self.localWorktreeName = repo.localStatus?.worktreeName
         self.localSyncState = repo.localStatus?.syncState
         self.localDirtySummary = repo.localStatus?.dirtyCounts?.summary
+        self.localUpstream = repo.localStatus?.upstreamBranch
+        self.localLastFetchAt = repo.localStatus?.lastFetchAt?.timeIntervalSinceReferenceDate
         self.trafficVisitors = repo.trafficVisitors
         self.trafficCloners = repo.trafficCloners
         self.heatmapDisplay = settings.heatmap.display

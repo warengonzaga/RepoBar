@@ -28,6 +28,8 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
     private let recentTagsCache = RecentListCache<RepoTagSummary>()
     private let recentBranchesCache = RecentListCache<RepoBranchSummary>()
     private let recentContributorsCache = RecentListCache<RepoContributorSummary>()
+    private var localBranchMenus: [ObjectIdentifier: LocalGitMenuEntry] = [:]
+    private var localWorktreeMenus: [ObjectIdentifier: LocalGitMenuEntry] = [:]
 
     init(appState: AppState) {
         self.appState = appState
@@ -193,6 +195,10 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
         self.open(url: url)
     }
 
+    func openLocalFinder(_ url: URL) {
+        self.open(url: url)
+    }
+
     @objc func openLocalTerminal(_ sender: NSMenuItem) {
         guard let url = sender.representedObject as? URL else { return }
         let preferred = self.appState.session.settings.localProjects.preferredTerminal
@@ -202,6 +208,67 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
             rootBookmarkData: self.appState.session.settings.localProjects.rootBookmarkData,
             ghosttyOpenMode: self.appState.session.settings.localProjects.ghosttyOpenMode
         )
+    }
+
+    func openLocalTerminal(_ url: URL) {
+        let preferred = self.appState.session.settings.localProjects.preferredTerminal
+        let terminal = TerminalApp.resolve(preferred)
+        terminal.open(
+            at: url,
+            rootBookmarkData: self.appState.session.settings.localProjects.rootBookmarkData,
+            ghosttyOpenMode: self.appState.session.settings.localProjects.ghosttyOpenMode
+        )
+    }
+
+    func syncLocalRepo(_ status: LocalRepoStatus) {
+        self.runLocalGitTask(
+            title: "Sync failed",
+            status: status,
+            notifyOnSuccess: true,
+            action: .sync(status.path)
+        )
+    }
+
+    func rebaseLocalRepo(_ status: LocalRepoStatus) {
+        self.runLocalGitTask(
+            title: "Rebase failed",
+            status: status,
+            notifyOnSuccess: false,
+            action: .rebase(status.path)
+        )
+    }
+
+    func resetLocalRepo(_ status: LocalRepoStatus) {
+        let confirmed = self.confirmHardReset(for: status)
+        guard confirmed else { return }
+        self.runLocalGitTask(
+            title: "Reset failed",
+            status: status,
+            notifyOnSuccess: false,
+            action: .reset(status.path)
+        )
+    }
+
+    @objc func switchLocalBranch(_ sender: NSMenuItem) {
+        guard let action = sender.representedObject as? LocalBranchAction else { return }
+        self.runLocalGitTask(
+            title: "Switch branch failed",
+            status: nil,
+            notifyOnSuccess: false,
+            action: .switchBranch(action.repoPath, action.branch)
+        )
+    }
+
+    @objc func switchLocalWorktree(_ sender: NSMenuItem) {
+        guard let action = sender.representedObject as? LocalWorktreeAction else { return }
+        let path = action.path.path
+        guard FileManager.default.fileExists(atPath: path) else {
+            self.presentAlert(title: "Worktree missing", message: "Could not find \(path).")
+            return
+        }
+        self.appState.session.settings.localProjects.preferredLocalPathsByFullName[action.fullName] = path
+        self.appState.persistSettings()
+        self.appState.refreshLocalProjects()
     }
 
     @objc func copyRepoName(_ sender: NSMenuItem) {
@@ -267,9 +334,24 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
             }
             return
         }
+        if let entry = self.localBranchMenus[ObjectIdentifier(menu)] {
+            self.menuBuilder.refreshMenuViewHeights(in: menu)
+            Task { @MainActor [weak self] in
+                await self?.refreshLocalBranchMenu(menu: menu, entry: entry)
+            }
+            return
+        }
+        if let entry = self.localWorktreeMenus[ObjectIdentifier(menu)] {
+            self.menuBuilder.refreshMenuViewHeights(in: menu)
+            Task { @MainActor [weak self] in
+                await self?.refreshLocalWorktreeMenu(menu: menu, entry: entry)
+            }
+            return
+        }
         if menu === self.mainMenu {
             let plan = self.menuBuilder.mainMenuPlan()
             self.recentListMenus.removeAll(keepingCapacity: true)
+            self.pruneLocalGitMenus()
             if self.appState.session.settings.appearance.showContributionHeader {
                 if case let .loggedIn(user) = self.appState.session.account {
                     Task { await self.appState.loadContributionHeatmapIfNeeded(for: user.username) }
@@ -327,12 +409,201 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
         self.recentListMenus = self.recentListMenus.filter { $0.value.menu != nil }
     }
 
+    private func pruneLocalGitMenus() {
+        self.localBranchMenus = self.localBranchMenus.filter { $0.value.menu != nil }
+        self.localWorktreeMenus = self.localWorktreeMenus.filter { $0.value.menu != nil }
+    }
+
     func menu(_ menu: NSMenu, willHighlight item: NSMenuItem?) {
         for menuItem in menu.items {
             guard let view = menuItem.view as? MenuItemHighlighting else { continue }
             let highlighted = menuItem == item && menuItem.isEnabled
             view.setHighlighted(highlighted)
         }
+    }
+
+    private enum LocalGitAction: Sendable {
+        case sync(URL)
+        case rebase(URL)
+        case reset(URL)
+        case switchBranch(URL, String)
+
+        var repoURL: URL {
+            switch self {
+            case let .sync(url),
+                 let .rebase(url),
+                 let .reset(url),
+                 let .switchBranch(url, _):
+                url
+            }
+        }
+    }
+
+    struct LocalGitMenuEntry {
+        weak var menu: NSMenu?
+        let repoPath: URL
+        let fullName: String
+    }
+
+    struct LocalBranchAction {
+        let repoPath: URL
+        let branch: String
+        let fullName: String
+    }
+
+    struct LocalWorktreeAction {
+        let path: URL
+        let fullName: String
+    }
+
+    func registerLocalBranchMenu(_ menu: NSMenu, repoPath: URL, fullName: String) {
+        self.localBranchMenus[ObjectIdentifier(menu)] = LocalGitMenuEntry(
+            menu: menu,
+            repoPath: repoPath,
+            fullName: fullName
+        )
+    }
+
+    func registerLocalWorktreeMenu(_ menu: NSMenu, repoPath: URL, fullName: String) {
+        self.localWorktreeMenus[ObjectIdentifier(menu)] = LocalGitMenuEntry(
+            menu: menu,
+            repoPath: repoPath,
+            fullName: fullName
+        )
+    }
+
+    private func refreshLocalBranchMenu(menu: NSMenu, entry: LocalGitMenuEntry) async {
+        let repoPath = entry.repoPath
+        let fullName = entry.fullName
+        let result = await Task.detached { () -> Result<[LocalGitBranch], Error> in
+            Result { try LocalGitService().branches(at: repoPath) }
+        }.value
+
+        menu.removeAllItems()
+        switch result {
+        case let .success(branches):
+            if branches.isEmpty {
+                menu.addItem(self.menuBuilder.infoItem("No branches"))
+                menu.update()
+                return
+            }
+            for branch in branches {
+                let item = NSMenuItem(title: branch.name, action: #selector(self.switchLocalBranch), keyEquivalent: "")
+                item.target = self
+                item.representedObject = LocalBranchAction(
+                    repoPath: repoPath,
+                    branch: branch.name,
+                    fullName: fullName
+                )
+                item.state = branch.isCurrent ? .on : .off
+                menu.addItem(item)
+            }
+            menu.update()
+        case let .failure(error):
+            menu.addItem(self.menuBuilder.infoItem("Failed to load branches"))
+            self.presentAlert(title: "Branch list failed", message: error.userFacingMessage)
+            menu.update()
+        }
+    }
+
+    private func refreshLocalWorktreeMenu(menu: NSMenu, entry: LocalGitMenuEntry) async {
+        let repoPath = entry.repoPath
+        let fullName = entry.fullName
+        let result = await Task.detached { () -> Result<[LocalGitWorktree], Error> in
+            Result { try LocalGitService().worktrees(at: repoPath) }
+        }.value
+
+        menu.removeAllItems()
+        switch result {
+        case let .success(worktrees):
+            if worktrees.isEmpty {
+                menu.addItem(self.menuBuilder.infoItem("No worktrees"))
+                menu.update()
+                return
+            }
+            for worktree in worktrees {
+                let name = worktree.branch ?? "Detached HEAD"
+                let displayPath = PathFormatter.displayString(worktree.path.path)
+                let title = "\(name) — \(displayPath)"
+                let item = NSMenuItem(title: title, action: #selector(self.switchLocalWorktree), keyEquivalent: "")
+                item.target = self
+                item.representedObject = LocalWorktreeAction(path: worktree.path, fullName: fullName)
+                item.state = worktree.isCurrent ? .on : .off
+                menu.addItem(item)
+            }
+            menu.update()
+        case let .failure(error):
+            menu.addItem(self.menuBuilder.infoItem("Failed to load worktrees"))
+            self.presentAlert(title: "Worktree list failed", message: error.userFacingMessage)
+            menu.update()
+        }
+    }
+
+    private func runLocalGitTask(
+        title: String,
+        status: LocalRepoStatus?,
+        notifyOnSuccess: Bool,
+        action: LocalGitAction
+    ) {
+        let rootBookmark = self.appState.session.settings.localProjects.rootBookmarkData
+        Task.detached { [weak self] in
+            guard let self else { return }
+            let result = Result {
+                var capturedError: Error?
+                SecurityScopedBookmark.withAccess(to: action.repoURL, rootBookmarkData: rootBookmark) {
+                    do {
+                        try Self.performLocalGitAction(action)
+                    } catch {
+                        capturedError = error
+                    }
+                }
+                if let capturedError { throw capturedError }
+            }
+            await MainActor.run {
+                switch result {
+                case .success:
+                    self.appState.refreshLocalProjects()
+                    if notifyOnSuccess, let status {
+                        Task { await LocalSyncNotifier.shared.notifySync(for: status) }
+                    }
+                case let .failure(error):
+                    self.presentAlert(title: title, message: error.userFacingMessage)
+                }
+            }
+        }
+    }
+
+    private nonisolated static func performLocalGitAction(_ action: LocalGitAction) throws {
+        let service = LocalGitService()
+        switch action {
+        case let .sync(url):
+            _ = try service.smartSync(at: url)
+        case let .rebase(url):
+            try service.rebaseOntoUpstream(at: url)
+        case let .reset(url):
+            try service.hardResetToUpstream(at: url)
+        case let .switchBranch(url, branch):
+            try service.switchBranch(at: url, branch: branch)
+        }
+    }
+
+    private func confirmHardReset(for status: LocalRepoStatus) -> Bool {
+        let alert = NSAlert()
+        alert.alertStyle = .critical
+        alert.messageText = "Hard reset \(status.displayName)?"
+        alert.informativeText = "This will discard uncommitted changes and reset to \(status.upstreamBranch ?? "upstream")."
+        alert.addButton(withTitle: "Reset")
+        alert.addButton(withTitle: "Cancel")
+        return alert.runModal() == .alertFirstButtonReturn
+    }
+
+    private func presentAlert(title: String, message: String) {
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = title
+        alert.informativeText = message
+        alert.addButton(withTitle: "OK")
+        alert.runModal()
     }
 
     private func startObservingMenuResize(for menu: NSMenu) {
