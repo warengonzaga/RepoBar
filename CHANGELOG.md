@@ -78,6 +78,7 @@
 - Repo submenu warnings now wrap to five lines instead of stretching the menu.
 - Repo submenu warning rows now expand to the full menu width.
 - Repo submenu open row now aligns its icon column with submenu items.
+- Repo issue submenus now support Mine/All filters plus label chips with a full label list.
 - Open in Finder/Terminal now uses security-scoped bookmarks for local project paths.
 - Heatmap raster view now re-renders on size/backing changes to avoid first-open sizing glitches.
 - Contribution header hides on failures instead of showing an error message.
