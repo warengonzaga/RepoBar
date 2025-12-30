@@ -27,6 +27,7 @@
 - repobar debug builds are now codesigned with a stable identifier (no repeated Keychain prompts after rebuilds).
 - repobar CLI now installs as `repobar` (with `repobarcli` alias via pnpm).
 - mac app now caches repo detail fetches for 1 hour to reduce API usage.
+- mac app image loading now uses Kingfisher (replacing Nuke).
 - Token refresh now preserves OAuth client credentials and shows a clearer error when refresh fails.
 - Menubar repository rows now use tighter, more native spacing with submenu indicators and icons.
 - Menubar repository cards now include more breathing room between entries.
@@ -52,7 +53,7 @@
 - Recent activity now includes action/number labels, repo targets, and avatar icons.
 - Activity row now shows the latest activity timestamp aligned to the right.
 - Contribution and repository heatmaps now align to the same week-based date range.
-- Inline heatmaps now include the date range axis labels.
+- Repo submenu heatmaps now include date range axis labels (inline heatmap omits them).
 - Heatmap rendering now uses cached CoreGraphics rasterization for faster menu redraws.
 - Heatmaps now stretch to the full available menu width (respecting existing card padding).
 - `pnpm restart` now rebuilds and relaunches without running tests; use `pnpm test` for tests and `pnpm check:coverage` for coverage.
