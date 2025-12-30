@@ -7,6 +7,7 @@ import SwiftUI
 final class StatusBarMenuManager: NSObject, NSMenuDelegate {
     private let appState: AppState
     private var mainMenu: NSMenu?
+    private weak var statusItem: NSStatusItem?
     private lazy var menuBuilder = StatusBarMenuBuilder(appState: self.appState, target: self)
     private var recentListMenuContexts: [ObjectIdentifier: RepoRecentMenuContext] = [:]
     private weak var menuResizeWindow: NSWindow?
@@ -38,7 +39,26 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
     func attachMainMenu(to statusItem: NSStatusItem) {
         let menu = self.mainMenu ?? self.menuBuilder.makeMainMenu()
         self.mainMenu = menu
+        self.statusItem = statusItem
         statusItem.menu = menu
+        self.configureStatusItemButton(statusItem)
+    }
+
+    private func configureStatusItemButton(_ statusItem: NSStatusItem) {
+        statusItem.button?.target = self
+        statusItem.button?.action = #selector(self.statusItemButtonClicked(_:))
+    }
+
+    @objc private func statusItemButtonClicked(_ sender: NSStatusBarButton) {
+        guard let statusItem = self.statusItem else { return }
+        if statusItem.menu == nil {
+            self.attachMainMenu(to: statusItem)
+        }
+        if let menu = statusItem.menu {
+            statusItem.popUpMenu(menu)
+        } else {
+            sender.performClick(nil)
+        }
     }
 
     // MARK: - Menu actions
