@@ -1,0 +1,55 @@
+import Testing
+@testable import RepoBar
+
+@Suite("AsyncTimeout")
+struct AsyncTimeoutTests {
+    @Test
+    func returnsValueBeforeTimeout() async throws {
+        let task = Task<Int, Error> {
+            try await Task.sleep(nanoseconds: 20_000_000)
+            return 42
+        }
+
+        let value = try await AsyncTimeout.value(within: 0.5, task: task)
+        #expect(value == 42)
+    }
+
+    @Test
+    func timesOutAndCancelsTask() async {
+        let cancellationFlag = CancellationFlag()
+        let task = Task<Int, Error> {
+            try await withTaskCancellationHandler {
+                try await Task.sleep(nanoseconds: 2_000_000_000)
+                return 1
+            } onCancel: {
+                Task { await cancellationFlag.markCancelled() }
+            }
+        }
+
+        do {
+            _ = try await AsyncTimeout.value(within: 0.05, task: task)
+            #expect(false, "Expected timeout")
+        } catch is AsyncTimeoutError {
+        } catch {
+            #expect(false, "Unexpected error: \(error)")
+        }
+
+        for _ in 0..<10 {
+            if await cancellationFlag.isCancelled {
+                break
+            }
+            try? await Task.sleep(nanoseconds: 20_000_000)
+        }
+
+        #expect(await cancellationFlag.isCancelled)
+        #expect(task.isCancelled)
+    }
+}
+
+private actor CancellationFlag {
+    private(set) var isCancelled = false
+
+    func markCancelled() {
+        self.isCancelled = true
+    }
+}
