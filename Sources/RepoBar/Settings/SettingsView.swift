@@ -567,25 +567,29 @@ struct AccountSettingsView: View {
                 switch self.session.account {
                 case let .loggedIn(user):
                     VStack(alignment: .leading, spacing: 12) {
-                        HStack(spacing: 10) {
-                            Image(systemName: "checkmark.seal.fill")
-                                .foregroundStyle(.green)
-                            VStack(alignment: .leading, spacing: 2) {
-                                Text("Signed in")
-                                    .font(.headline)
-                                Text("\(user.username) · \(user.host.host ?? "github.com")")
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
+                        HStack(alignment: .top, spacing: 12) {
+                            HStack(spacing: 10) {
+                                Image(systemName: "checkmark.seal.fill")
+                                    .foregroundStyle(.green)
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text("Signed in")
+                                        .font(.headline)
+                                    Text("\(user.username) · \(user.host.host ?? "github.com")")
+                                        .font(.subheadline)
+                                        .foregroundStyle(.secondary)
+                                }
                             }
-                        }
-                        Button("Log out") {
-                            Task {
-                                await self.appState.auth.logout()
-                                self.session.account = .loggedOut
+                            Spacer()
+                            Button("Log out") {
+                                Task {
+                                    await self.appState.auth.logout()
+                                    self.session.account = .loggedOut
+                                }
                             }
+                            .buttonStyle(.bordered)
                         }
-                        .buttonStyle(.bordered)
                     }
+                    .padding(.vertical, 4)
                 default:
                     LabeledContent("Client ID") {
                         TextField("", text: self.$clientID)
