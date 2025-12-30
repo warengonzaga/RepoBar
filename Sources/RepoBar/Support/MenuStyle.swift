@@ -32,4 +32,5 @@ enum MenuStyle {
 
     static let mainMenuDirtyFileLimit: Int = 3
     static let submenuDirtyFileLimit: Int = 10
+    static let globalActivityLimit: Int = 20
 }

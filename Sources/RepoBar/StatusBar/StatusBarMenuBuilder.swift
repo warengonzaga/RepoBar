@@ -42,6 +42,10 @@ final class StatusBarMenuBuilder {
                 error: session.contributionError,
                 heatmapCount: session.contributionHeatmap.count
             ),
+            globalActivity: ActivitySignature(
+                events: session.globalActivityEvents,
+                error: session.globalActivityError
+            ),
             heatmapRangeStart: session.heatmapRange.start.timeIntervalSinceReferenceDate,
             heatmapRangeEnd: session.heatmapRange.end.timeIntervalSinceReferenceDate,
             reposDigest: RepoSignature.digest(for: repos),
@@ -72,7 +76,8 @@ final class StatusBarMenuBuilder {
             .padding(.horizontal, MenuStyle.headerHorizontalPadding)
             .padding(.top, MenuStyle.headerTopPadding)
             .padding(.bottom, MenuStyle.headerBottomPadding)
-            menu.addItem(self.viewItem(for: header, enabled: true, highlightable: false))
+            let submenu = self.contributionSubmenu(username: username, displayName: displayName)
+            menu.addItem(self.viewItem(for: header, enabled: true, highlightable: true, submenu: submenu))
             menu.addItem(.separator())
         }
 

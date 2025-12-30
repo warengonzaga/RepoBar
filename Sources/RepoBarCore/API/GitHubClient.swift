@@ -96,6 +96,26 @@ public actor GitHubClient {
         }
     }
 
+    public func userActivityEvents(
+        username: String,
+        scope: GlobalActivityScope,
+        limit: Int
+    ) async throws -> [ActivityEvent] {
+        let token = try await validAccessToken()
+        let path = scope == .allActivity
+            ? "/users/\(username)/received_events"
+            : "/users/\(username)/events"
+        var components = URLComponents(
+            url: self.apiHost.appending(path: path),
+            resolvingAgainstBaseURL: false
+        )!
+        components.queryItems = [URLQueryItem(name: "per_page", value: "30")]
+        let (data, _) = try await authorizedGet(url: components.url!, token: token)
+        let events = try jsonDecoder.decode([RepoEvent].self, from: data)
+        let mapped = events.compactMap { $0.activityEventFromRepo() }
+        return Array(mapped.prefix(max(limit, 0)))
+    }
+
     /// Latest release (including prereleases). Returns `nil` if the repo has no releases.
     public func latestRelease(owner: String, name: String) async throws -> Release? {
         do {

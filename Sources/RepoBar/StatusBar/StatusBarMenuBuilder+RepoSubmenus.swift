@@ -154,7 +154,7 @@ extension StatusBarMenuBuilder {
         if events.isEmpty == false {
             menu.addItem(.separator())
             menu.addItem(self.infoItem("Activity"))
-            events.forEach { menu.addItem(self.repoActivityItem(for: $0)) }
+            events.forEach { menu.addItem(self.activityMenuItem(for: $0)) }
         }
 
         let detailItems = self.repoDetailItems(for: repo)
@@ -320,34 +320,4 @@ extension StatusBarMenuBuilder {
         return items
     }
 
-    private func repoActivityItem(for event: ActivityEvent) -> NSMenuItem {
-        let view = ActivityMenuItemView(event: event, symbolName: self.activitySymbolName(for: event)) { [weak target] in
-            target?.open(url: event.url)
-        }
-        return self.viewItem(for: view, enabled: true, highlightable: true)
-    }
-
-    private func activitySymbolName(for event: ActivityEvent) -> String {
-        guard let type = event.eventTypeEnum else { return "clock" }
-        switch type {
-        case .pullRequest: return "arrow.triangle.branch"
-        case .pullRequestReview: return "checkmark.bubble"
-        case .pullRequestReviewComment: return "text.bubble"
-        case .pullRequestReviewThread: return "text.bubble"
-        case .issueComment: return "text.bubble"
-        case .issues: return "exclamationmark.circle"
-        case .push: return "arrow.up.circle"
-        case .release: return "tag"
-        case .watch: return "star"
-        case .fork: return "doc.on.doc"
-        case .create: return "plus"
-        case .delete: return "trash"
-        case .member: return "person.badge.plus"
-        case .public: return "globe"
-        case .gollum: return "book"
-        case .commitComment: return "text.bubble"
-        case .discussion: return "bubble.left.and.bubble.right"
-        case .sponsorship: return "heart"
-        }
-    }
 }

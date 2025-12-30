@@ -223,6 +223,8 @@ final class AppState {
                     self.session.localDiscoveredRepoCount = localSnapshot.discoveredCount
                     self.session.localProjectsAccessDenied = localSnapshot.accessDenied
                     self.session.localProjectsScanInProgress = false
+                    self.session.globalActivityEvents = []
+                    self.session.globalActivityError = nil
                 }
                 return
             }
@@ -256,12 +258,30 @@ final class AppState {
             let merged = self.mergeHydrated(hydrated, into: ordered)
             let final = self.applyPinnedOrder(to: merged)
             let localSnapshot = await localSnapshotTask.value
+            let activityUsername: String? = {
+                guard case let .loggedIn(user) = self.session.account,
+                      user.username.isEmpty == false else { return nil }
+                return user.username
+            }()
+            let globalActivityTask = Task { [weak self] -> GlobalActivityResult in
+                guard let self, let activityUsername else {
+                    return GlobalActivityResult(events: [], error: nil)
+                }
+                return await self.fetchGlobalActivityEvents(
+                    username: activityUsername,
+                    scope: settings.appearance.activityScope,
+                    repos: final
+                )
+            }
             await self.updateSession(with: final, now: now)
+            let globalActivity = await globalActivityTask.value
             await MainActor.run {
                 self.session.localRepoIndex = localSnapshot.repoIndex
                 self.session.localDiscoveredRepoCount = localSnapshot.discoveredCount
                 self.session.localProjectsAccessDenied = localSnapshot.accessDenied
                 self.session.localProjectsScanInProgress = false
+                self.session.globalActivityEvents = globalActivity.events
+                self.session.globalActivityError = globalActivity.error
             }
             await self.updateMenuDisplayIndex(now: now)
             self.prefetchMenuTargets(from: final, visibleCount: targets.count, token: self.refreshTaskToken)
@@ -322,6 +342,67 @@ final class AppState {
                 self.session.localProjectsScanInProgress = false
             }
         }
+    }
+
+    private struct GlobalActivityResult {
+        let events: [ActivityEvent]
+        let error: String?
+    }
+
+    private func fetchGlobalActivityEvents(
+        username: String,
+        scope: GlobalActivityScope,
+        repos: [Repository]
+    ) async -> GlobalActivityResult {
+        let repoEvents = repos.flatMap(\.activityEvents)
+        do {
+            let userEvents = try await self.github.userActivityEvents(
+                username: username,
+                scope: scope,
+                limit: MenuStyle.globalActivityLimit
+            )
+            let merged = self.mergeGlobalActivityEvents(
+                userEvents: userEvents,
+                repoEvents: repoEvents,
+                scope: scope,
+                username: username,
+                limit: MenuStyle.globalActivityLimit
+            )
+            return GlobalActivityResult(events: merged, error: nil)
+        } catch {
+            let merged = self.mergeGlobalActivityEvents(
+                userEvents: [],
+                repoEvents: repoEvents,
+                scope: scope,
+                username: username,
+                limit: MenuStyle.globalActivityLimit
+            )
+            return GlobalActivityResult(events: merged, error: error.userFacingMessage)
+        }
+    }
+
+    private func mergeGlobalActivityEvents(
+        userEvents: [ActivityEvent],
+        repoEvents: [ActivityEvent],
+        scope: GlobalActivityScope,
+        username: String,
+        limit: Int
+    ) -> [ActivityEvent] {
+        let combined = userEvents + repoEvents
+        let filtered = scope == .myActivity
+            ? combined.filter { $0.actor.caseInsensitiveCompare(username) == .orderedSame }
+            : combined
+        let sorted = filtered.sorted { $0.date > $1.date }
+        var seen: Set<String> = []
+        var results: [ActivityEvent] = []
+        results.reserveCapacity(limit)
+        for event in sorted {
+            let key = "\(event.url.absoluteString)|\(event.date.timeIntervalSinceReferenceDate)|\(event.actor)"
+            guard seen.insert(key).inserted else { continue }
+            results.append(event)
+            if results.count >= limit { break }
+        }
+        return results
     }
 
     private func localMatchRepoNamesForLocalProjects(repos: [Repository], includePinned: Bool) -> Set<String> {
@@ -634,6 +715,8 @@ final class Session {
     var contributionHeatmap: [HeatmapCell] = []
     var contributionUser: String?
     var contributionError: String?
+    var globalActivityEvents: [ActivityEvent] = []
+    var globalActivityError: String?
     var heatmapRange: HeatmapRange = HeatmapFilter.range(span: .twelveMonths, now: Date(), alignToWeek: true)
     var menuRepoSelection: MenuRepoSelection = .all
     var recentIssueScope: RecentIssueScope = .all

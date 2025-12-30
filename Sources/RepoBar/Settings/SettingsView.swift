@@ -231,6 +231,15 @@ struct GeneralSettingsView: View {
                         .onChange(of: self.session.settings.appearance.showContributionHeader) { _, _ in
                             self.appState.persistSettings()
                         }
+                    Picker("Activity feed", selection: self.$session.settings.appearance.activityScope) {
+                        ForEach(GlobalActivityScope.allCases, id: \.self) { scope in
+                            Text(scope.label).tag(scope)
+                        }
+                    }
+                    .onChange(of: self.session.settings.appearance.activityScope) { _, _ in
+                        self.appState.persistSettings()
+                        self.appState.requestRefresh()
+                    }
                     Picker("Repository heatmap", selection: self.$session.settings.heatmap.display) {
                         ForEach(HeatmapDisplay.allCases, id: \.self) { display in
                             Text(display.label).tag(display)

@@ -38,6 +38,7 @@ public struct AppearanceSettings: Equatable, Codable {
     public var showContributionHeader = true
     public var cardDensity: CardDensity = .comfortable
     public var accentTone: AccentTone = .githubGreen
+    public var activityScope: GlobalActivityScope = .myActivity
 
     public init() {}
 }
@@ -142,6 +143,18 @@ public enum AccentTone: String, CaseIterable, Equatable, Codable {
         switch self {
         case .system: "System accent"
         case .githubGreen: "GitHub greens"
+        }
+    }
+}
+
+public enum GlobalActivityScope: String, CaseIterable, Equatable, Codable {
+    case allActivity
+    case myActivity
+
+    public var label: String {
+        switch self {
+        case .allActivity: "All activity"
+        case .myActivity: "My activity"
         }
     }
 }

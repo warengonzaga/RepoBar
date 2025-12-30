@@ -4,6 +4,8 @@
 
 ### Added
 - RepoBarCore shared module for GitHub API/auth/models used by the app and CLI.
+- Contribution header submenu with a global activity feed and a quick link to the GitHub profile.
+- Global activity scope setting to switch between all activity and your activity.
 - repobar bundled CLI with login/logout/status and repo listing (activity, issues, PRs, stars), JSON output, and limit flag.
 - repobar CLI now supports `issues` and `pulls` to list the 20 most recently updated open items for a repository.
 - CLI repo listing now filters to the signed-in user and owned orgs (admin membership).

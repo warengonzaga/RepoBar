@@ -28,19 +28,13 @@ struct ContributionHeaderView: View {
         if !self.hasCachedHeatmap, !self.isLoading {
             EmptyView()
         } else {
-            Button {
-                self.openProfile()
-            } label: {
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("Contributions · \(self.displayName) · last \(self.session.settings.heatmap.span.label)")
-                        .font(.caption2)
-                        .foregroundStyle(MenuHighlightStyle.secondary(self.isHighlighted))
-                    self.content
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .contentShape(Rectangle())
+            VStack(alignment: .leading, spacing: 4) {
+                Text("Contributions · \(self.displayName) · last \(self.session.settings.heatmap.span.label)")
+                    .font(.caption2)
+                    .foregroundStyle(MenuHighlightStyle.secondary(self.isHighlighted))
+                self.content
             }
-            .buttonStyle(.plain)
+            .frame(maxWidth: .infinity, alignment: .leading)
             .task(id: self.session.hasLoadedRepositories) {
                 guard self.session.hasLoadedRepositories else { return }
                 let hasHeatmap = self.hasCachedHeatmap
@@ -81,17 +75,6 @@ struct ContributionHeaderView: View {
         }
         .frame(maxWidth: .infinity)
         .accessibilityLabel(hasHeatmap ? "Contribution graph for \(self.username)" : "Contribution graph loading")
-    }
-
-    private func openProfile() {
-        guard let url = profileURL else { return }
-        NSWorkspace.shared.open(url)
-    }
-
-    private var profileURL: URL? {
-        var host = self.session.settings.githubHost
-        host.appendPathComponent(self.username)
-        return host
     }
 
     private var placeholder: some View {

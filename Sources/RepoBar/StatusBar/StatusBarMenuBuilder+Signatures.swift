@@ -13,6 +13,7 @@ struct MenuBuildSignature: Hashable {
     let rateLimitReset: Date?
     let lastError: String?
     let contribution: ContributionSignature
+    let globalActivity: ActivitySignature
     let heatmapRangeStart: TimeInterval
     let heatmapRangeEnd: TimeInterval
     let reposDigest: Int
@@ -46,6 +47,7 @@ struct MenuSettingsSignature: Hashable {
     let showContributionHeader: Bool
     let cardDensity: CardDensity
     let accentTone: AccentTone
+    let activityScope: GlobalActivityScope
     let heatmapDisplay: HeatmapDisplay
     let heatmapSpan: HeatmapSpan
     let displayLimit: Int
@@ -61,6 +63,7 @@ struct MenuSettingsSignature: Hashable {
         self.showContributionHeader = settings.appearance.showContributionHeader
         self.cardDensity = settings.appearance.cardDensity
         self.accentTone = settings.appearance.accentTone
+        self.activityScope = settings.appearance.activityScope
         self.heatmapDisplay = settings.heatmap.display
         self.heatmapSpan = settings.heatmap.span
         self.displayLimit = settings.repoList.displayLimit
@@ -78,6 +81,18 @@ struct ContributionSignature: Hashable {
     let user: String?
     let error: String?
     let heatmapCount: Int
+}
+
+struct ActivitySignature: Hashable {
+    let count: Int
+    let latestDate: Date?
+    let error: String?
+
+    init(events: [ActivityEvent], error: String?) {
+        self.count = events.count
+        self.latestDate = events.first?.date
+        self.error = error
+    }
 }
 
 struct RepoSignature: Hashable {

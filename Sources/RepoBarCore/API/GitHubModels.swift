@@ -176,12 +176,23 @@ struct PullRequestListItem: Decodable {
 struct RepoEvent: Decodable {
     let type: String
     let actor: EventActor
+    let repo: EventRepo?
     let payload: EventPayload
     let createdAt: Date
 
     enum CodingKeys: String, CodingKey {
-        case type, actor, payload
+        case type, actor, repo, payload
         case createdAt = "created_at"
+    }
+}
+
+struct EventRepo: Decodable {
+    let name: String
+    let url: URL?
+
+    enum CodingKeys: String, CodingKey {
+        case name
+        case url
     }
 }
 
@@ -340,6 +351,13 @@ extension RepoEvent {
             eventType: self.type,
             metadata: metadata
         )
+    }
+
+    func activityEventFromRepo() -> ActivityEvent? {
+        guard let repo else { return nil }
+        let parts = repo.name.split(separator: "/", maxSplits: 1)
+        guard parts.count == 2 else { return nil }
+        return self.activityEvent(owner: String(parts[0]), name: String(parts[1]))
     }
 
     private func activityURL(owner: String, name: String) -> URL {
