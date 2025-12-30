@@ -202,13 +202,6 @@ struct RepoSubmenuBuilder {
             }
         }
 
-        let detailItems = self.repoDetailItems(for: repo)
-        if !detailItems.isEmpty {
-            menu.addItem(.separator())
-            menu.addItem(self.menuBuilder.infoItem("Details"))
-            detailItems.forEach { menu.addItem($0) }
-        }
-
         menu.addItem(.separator())
 
         if isPinned {
@@ -347,24 +340,6 @@ struct RepoSubmenuBuilder {
             badgeText: config.badgeText
         )
         return self.menuBuilder.viewItem(for: row, enabled: true, highlightable: true, submenu: submenu)
-    }
-
-    private func repoDetailItems(for repo: RepositoryDisplayModel) -> [NSMenuItem] {
-        var items: [NSMenuItem] = []
-        if let error = repo.error, RepositoryErrorClassifier.isNonCriticalMenuWarning(error) {
-            items.append(self.menuBuilder.infoMessageItem(error))
-        }
-        if let local = repo.localStatus {
-            items.append(self.menuBuilder.infoItem("Branch: \(local.branch)"))
-            items.append(self.menuBuilder.infoItem("Sync: \(local.syncDetail)"))
-        }
-        if let visitors = repo.trafficVisitors {
-            items.append(self.menuBuilder.infoItem("Visitors (14d): \(visitors)"))
-        }
-        if let cloners = repo.trafficCloners {
-            items.append(self.menuBuilder.infoItem("Cloners (14d): \(cloners)"))
-        }
-        return items
     }
 
     private func repoActivityMoreMenuItem(events: [ActivityEvent]) -> NSMenuItem {
