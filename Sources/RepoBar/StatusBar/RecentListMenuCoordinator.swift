@@ -106,7 +106,13 @@ final class RecentListMenuCoordinator {
         guard descriptor.needsRefresh(fullName, now, self.menuService.cacheTTL) else { return }
         Task { @MainActor [weak self] in
             guard let self else { return }
-            _ = try? await descriptor.load(fullName, owner, name, self.menuService.listLimit)
+            do {
+                _ = try await descriptor.load(fullName, owner, name, self.menuService.listLimit)
+            } catch {
+                await DiagnosticsLogger.shared.message(
+                    "Prefetch failed: \(String(describing: kind)) \(fullName) error=\(error.localizedDescription)"
+                )
+            }
         }
     }
 
@@ -176,6 +182,9 @@ final class RecentListMenuCoordinator {
                 })
             )
         } catch is AsyncTimeoutError {
+            await DiagnosticsLogger.shared.message(
+                "Recent list timed out: \(String(describing: context.kind)) \(context.fullName)"
+            )
             if stale == nil {
                 self.populateRecentListMenu(
                     menu,
@@ -186,6 +195,9 @@ final class RecentListMenuCoordinator {
                 )
             }
         } catch {
+            await DiagnosticsLogger.shared.message(
+                "Recent list failed: \(String(describing: context.kind)) \(context.fullName) error=\(error.localizedDescription)"
+            )
             if stale == nil {
                 self.populateRecentListMenu(
                     menu,
