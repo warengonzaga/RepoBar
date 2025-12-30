@@ -86,9 +86,11 @@ final class AppState {
     private let menuRefreshInterval: TimeInterval = 30
     private var refreshTask: Task<Void, Never>?
     private var localProjectsTask: Task<Void, Never>?
+    private var tokenRefreshTask: Task<Void, Never>?
     private var refreshTaskToken = UUID()
     private let hydrateConcurrencyLimit = 4
     private var prefetchTask: Task<Void, Never>?
+    private let tokenRefreshInterval: TimeInterval = 300
 
     // Default GitHub App values for convenience login from the main window.
     private let defaultClientID = RepoBarAuthDefaults.clientID
@@ -103,6 +105,15 @@ final class AppState {
         Task {
             await self.github.setTokenProvider { @Sendable [weak self] () async throws -> OAuthTokens? in
                 try? await self?.auth.refreshIfNeeded()
+            }
+        }
+        self.tokenRefreshTask = Task { [weak self] in
+            guard let self else { return }
+            while !Task.isCancelled {
+                if self.auth.loadTokens() != nil {
+                    try? await self.auth.refreshIfNeeded()
+                }
+                try? await Task.sleep(for: .seconds(self.tokenRefreshInterval))
             }
         }
         self.refreshScheduler.configure(interval: self.session.settings.refreshInterval.seconds) { [weak self] in
