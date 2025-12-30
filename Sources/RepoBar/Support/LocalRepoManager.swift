@@ -103,11 +103,8 @@ actor LocalRepoManager {
         now: Date,
         forceRescan: Bool
     ) -> [URL] {
-        if forceRescan == false,
-           let cached = self.discoveryCache[resolvedRoot],
-           now.timeIntervalSince(cached.discoveredAt) < self.discoveryCacheTTL
-        {
-            return cached.repoRoots
+        if forceRescan == false, let cached = self.discoveryCache[resolvedRoot] {
+            if now.timeIntervalSince(cached.discoveredAt) < self.discoveryCacheTTL { return cached.repoRoots }
         }
 
         let roots = LocalProjectsService().discoverRepoRoots(rootURL: rootURL, maxDepth: 2)

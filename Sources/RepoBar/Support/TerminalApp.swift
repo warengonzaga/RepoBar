@@ -59,11 +59,10 @@ enum TerminalApp: String, CaseIterable {
 
     func open(at url: URL, rootBookmarkData: Data?, ghosttyOpenMode: GhosttyOpenMode = .tab) {
         Self.logger.info("Open terminal: \(self.displayName, privacy: .public) mode=\(ghosttyOpenMode.rawValue, privacy: .public) path=\(url.path, privacy: .private)")
-        if self == .ghostty,
-           ghosttyOpenMode == .newWindow,
-           self.openGhosttyNewWindow(at: url, rootBookmarkData: rootBookmarkData)
-        {
-            return
+        if self == .ghostty, ghosttyOpenMode == .newWindow {
+            if self.openGhosttyNewWindow(at: url, rootBookmarkData: rootBookmarkData) {
+                return
+            }
         }
         if self == .ghostty, ghosttyOpenMode == .newWindow {
             Self.logger.warning("Ghostty new-window script failed; falling back to standard open.")

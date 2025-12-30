@@ -112,9 +112,10 @@ final class AppState {
 
     func refreshIfNeededForMenu() {
         let now = Date()
-        if let snapshot = self.session.menuSnapshot,
-           snapshot.isStale(now: now, interval: self.menuRefreshInterval) == false
-        {
+        let hasFreshSnapshot = self.session.menuSnapshot.map {
+            $0.isStale(now: now, interval: self.menuRefreshInterval) == false
+        } ?? false
+        if hasFreshSnapshot {
             return
         }
         if self.refreshTask != nil { return }

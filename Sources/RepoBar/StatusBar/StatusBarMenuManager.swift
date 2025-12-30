@@ -227,10 +227,10 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
         }
         if menu === self.mainMenu {
             self.recentListMenuContexts.removeAll(keepingCapacity: true)
-            if self.appState.session.settings.appearance.showContributionHeader,
-               case let .loggedIn(user) = self.appState.session.account
-            {
-                Task { await self.appState.loadContributionHeatmapIfNeeded(for: user.username) }
+            if self.appState.session.settings.appearance.showContributionHeader {
+                if case let .loggedIn(user) = self.appState.session.account {
+                    Task { await self.appState.loadContributionHeatmapIfNeeded(for: user.username) }
+                }
             }
             self.appState.refreshIfNeededForMenu()
             self.menuBuilder.populateMainMenu(menu)
@@ -256,9 +256,7 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
                 self.menuBuilder.clearHighlights(in: menu)
                 self.startObservingMenuResize(for: menu)
             }
-        } else if let fullName = menu.items.first?.representedObject as? String,
-                  fullName.contains("/")
-        {
+        } else if let fullName = menu.items.first?.representedObject as? String, fullName.contains("/") {
             // Repo submenu opened; prefetch so nested recent lists appear instantly.
             self.prefetchRecentLists(fullNames: [fullName])
         }
