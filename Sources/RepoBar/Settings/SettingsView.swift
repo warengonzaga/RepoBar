@@ -743,6 +743,17 @@ struct DebugSettingsView: View {
                         .lineLimit(1)
                         .truncationMode(.middle)
                 }
+                LabeledContent("Git sandboxed") {
+                    Text(self.gitExecutableInfo.isSandboxed ? "Yes" : "No")
+                }
+                if let error = self.gitExecutableInfo.error, !error.isEmpty {
+                    LabeledContent("Git error") {
+                        Text(error)
+                            .lineLimit(2)
+                            .truncationMode(.middle)
+                            .foregroundStyle(.secondary)
+                    }
+                }
                 LabeledContent("API host") {
                     Text(self.diagnostics.apiHost.absoluteString)
                         .lineLimit(1)

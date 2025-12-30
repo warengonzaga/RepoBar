@@ -4,10 +4,14 @@ import Security
 public struct GitExecutableInfo: Equatable, Sendable {
     public let path: String
     public let version: String?
+    public let error: String?
+    public let isSandboxed: Bool
 
-    public init(path: String, version: String?) {
+    public init(path: String, version: String?, error: String?, isSandboxed: Bool) {
         self.path = path
         self.version = version
+        self.error = error
+        self.isSandboxed = isSandboxed
     }
 }
 
@@ -36,13 +40,13 @@ struct GitExecutableLocator: Sendable {
         self.url = URL(fileURLWithPath: resolved)
     }
 
-    private static var isSandboxed: Bool {
+    static var isSandboxed: Bool {
         guard let task = SecTaskCreateFromSelf(nil) else { return false }
         let entitlement = SecTaskCopyValueForEntitlement(task, "com.apple.security.app-sandbox" as CFString, nil)
         return (entitlement as? Bool) == true
     }
 
-    static func version(at url: URL) -> String? {
+    static func version(at url: URL) -> (version: String?, error: String?) {
         let process = Process()
         process.executableURL = url
         process.arguments = ["--version"]
@@ -53,13 +57,16 @@ struct GitExecutableLocator: Sendable {
         do {
             try process.run()
         } catch {
-            return nil
+            return (nil, error.localizedDescription)
         }
         process.waitUntilExit()
-        if process.terminationStatus != 0 { return nil }
-        let data = out.fileHandleForReading.readDataToEndOfFile()
-        let raw = String(data: data, encoding: .utf8) ?? ""
-        let trimmed = raw.trimmingCharacters(in: .whitespacesAndNewlines)
-        return trimmed.isEmpty ? nil : trimmed
+        let stdout = String(data: out.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+        let stderr = String(data: err.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
+        let trimmed = stdout.trimmingCharacters(in: .whitespacesAndNewlines)
+        if process.terminationStatus != 0 {
+            let message = stderr.trimmingCharacters(in: .whitespacesAndNewlines)
+            return (nil, message.isEmpty ? "git --version failed" : message)
+        }
+        return (trimmed.isEmpty ? nil : trimmed, nil)
     }
 }

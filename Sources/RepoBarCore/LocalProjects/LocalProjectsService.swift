@@ -17,8 +17,13 @@ public struct LocalProjectsService {
 
     public static func gitExecutableInfo() -> GitExecutableInfo {
         let url = GitExecutableLocator.shared.url
-        let version = GitExecutableLocator.version(at: url)
-        return GitExecutableInfo(path: url.path, version: version)
+        let (version, error) = GitExecutableLocator.version(at: url)
+        return GitExecutableInfo(
+            path: url.path,
+            version: version,
+            error: error,
+            isSandboxed: GitExecutableLocator.isSandboxed
+        )
     }
 
     public func discoverRepoRoots(rootPath: String, maxDepth: Int = 2) -> [URL] {
