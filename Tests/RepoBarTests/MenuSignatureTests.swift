@@ -31,6 +31,7 @@ struct MenuSignatureTests {
             settings: settings,
             heatmapRange: range,
             recentCounts: RepoRecentCountSignature(
+                commits: nil,
                 releases: nil,
                 discussions: nil,
                 tags: nil,
@@ -62,6 +63,7 @@ struct MenuSignatureTests {
             settings: settings,
             heatmapRange: range,
             recentCounts: RepoRecentCountSignature(
+                commits: nil,
                 releases: nil,
                 discussions: nil,
                 tags: nil,
@@ -104,6 +106,7 @@ struct MenuSignatureTests {
             lastError: nil,
             contribution: ContributionSignature(user: nil, error: nil, heatmapCount: 0),
             globalActivity: ActivitySignature(events: [], error: nil),
+            globalCommits: CommitSignature(commits: [], error: nil),
             heatmapRangeStart: now.timeIntervalSinceReferenceDate,
             heatmapRangeEnd: now.timeIntervalSinceReferenceDate,
             reposDigest: RepoSignature.digest(for: [display]),
@@ -119,6 +122,7 @@ struct MenuSignatureTests {
             lastError: nil,
             contribution: ContributionSignature(user: nil, error: nil, heatmapCount: 0),
             globalActivity: ActivitySignature(events: [], error: nil),
+            globalCommits: CommitSignature(commits: [], error: nil),
             heatmapRangeStart: now.timeIntervalSinceReferenceDate,
             heatmapRangeEnd: now.timeIntervalSinceReferenceDate,
             reposDigest: RepoSignature.digest(for: [display]),

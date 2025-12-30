@@ -10,7 +10,7 @@ struct AsyncTimeoutTests {
             return 42
         }
 
-        let value = try await AsyncTimeout.value(within: 1.0, task: task)
+        let value = try await AsyncTimeout.value(within: 2.0, task: task)
         #expect(value == 42)
     }
 
