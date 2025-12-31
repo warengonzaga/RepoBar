@@ -120,12 +120,14 @@ struct AboutSettingsView: View {
             guard !self.didSyncUpdater else { return }
             if SparkleController.shared.canCheckForUpdates {
                 SparkleController.shared.automaticallyChecksForUpdates = self.autoUpdateEnabled
+                SparkleController.shared.automaticallyDownloadsUpdates = self.autoUpdateEnabled
             }
             self.didSyncUpdater = true
         }
         .onChange(of: self.autoUpdateEnabled) { _, newValue in
             if SparkleController.shared.canCheckForUpdates {
                 SparkleController.shared.automaticallyChecksForUpdates = newValue
+                SparkleController.shared.automaticallyDownloadsUpdates = newValue
             }
         }
     }

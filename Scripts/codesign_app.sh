@@ -79,6 +79,29 @@ find "$APP_PATH/Contents/Frameworks" \( -type d -name '*.framework' -o -type f -
   codesign --force --options runtime --timestamp --sign "$IDENTITY" "$fw"
 done
 
+SPARKLE_FRAMEWORK="$APP_PATH/Contents/Frameworks/Sparkle.framework"
+if [ -d "$SPARKLE_FRAMEWORK" ]; then
+  log "Signing Sparkle components"
+  sign_sparkle() { codesign --force --options runtime --timestamp --sign "$IDENTITY" "$1"; }
+  SPARKLE_VERSION="$SPARKLE_FRAMEWORK/Versions/B"
+  for path in \
+    "$SPARKLE_VERSION/Sparkle" \
+    "$SPARKLE_VERSION/Autoupdate" \
+    "$SPARKLE_VERSION/Updater.app/Contents/MacOS/Updater" \
+    "$SPARKLE_VERSION/Updater.app" \
+    "$SPARKLE_VERSION/XPCServices/Downloader.xpc/Contents/MacOS/Downloader" \
+    "$SPARKLE_VERSION/XPCServices/Downloader.xpc" \
+    "$SPARKLE_VERSION/XPCServices/Installer.xpc/Contents/MacOS/Installer" \
+    "$SPARKLE_VERSION/XPCServices/Installer.xpc" \
+    "$SPARKLE_VERSION" \
+    "$SPARKLE_FRAMEWORK"
+  do
+    if [ -e "$path" ]; then
+      sign_sparkle "$path"
+    fi
+  done
+fi
+
 log "Signing main binary"
 codesign --force --options runtime --timestamp --entitlements "$TMP_ENTITLEMENTS" --sign "$IDENTITY" "$APP_PATH/Contents/MacOS/RepoBar"
 

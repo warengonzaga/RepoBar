@@ -99,6 +99,7 @@ cat > "${INFO_PLIST}" <<PLIST
     <key>CFBundleVersion</key><string>${BUILD_NUMBER}</string>
     <key>SUFeedURL</key><string>https://raw.githubusercontent.com/steipete/RepoBar/main/appcast.xml</string>
     <key>SUPublicEDKey</key><string>AGCY8w5vHirVfGGDGc8Szc5iuOqupZSh9pMj/Qs67XI=</string>
+    <key>SUEnableAutomaticChecks</key><true/>
     <key>SUEnableInstallerLauncherService</key><true/>
     <key>LSUIElement</key><true/>
     <key>LSMultipleInstancesProhibited</key><true/>

@@ -16,6 +16,7 @@ final class UpdateStatus {
 @MainActor
 protocol UpdaterProviding: AnyObject {
     var automaticallyChecksForUpdates: Bool { get set }
+    var automaticallyDownloadsUpdates: Bool { get set }
     var isAvailable: Bool { get }
     func checkForUpdates(_ sender: Any?)
 }
@@ -23,6 +24,7 @@ protocol UpdaterProviding: AnyObject {
 /// No-op updater used for unsigned/dev or non-app builds so Sparkle dialogs don’t appear in development/test runs.
 final class DisabledUpdaterController: UpdaterProviding {
     var automaticallyChecksForUpdates: Bool = false
+    var automaticallyDownloadsUpdates: Bool = false
     let isAvailable: Bool = false
     func checkForUpdates(_: Any?) {}
 }
@@ -34,6 +36,11 @@ final class DisabledUpdaterController: UpdaterProviding {
         var automaticallyChecksForUpdates: Bool {
             get { self.updater.automaticallyChecksForUpdates }
             set { self.updater.automaticallyChecksForUpdates = newValue }
+        }
+
+        var automaticallyDownloadsUpdates: Bool {
+            get { self.updater.automaticallyDownloadsUpdates }
+            set { self.updater.automaticallyDownloadsUpdates = newValue }
         }
 
         var isAvailable: Bool { true }
@@ -53,8 +60,9 @@ final class SparkleController: NSObject {
             let bundleURL = Bundle.main.bundleURL
             let isBundledApp = bundleURL.pathExtension == "app"
             let isSigned = SparkleController.isDeveloperIDSigned(bundleURL: bundleURL)
+            let isHomebrew = InstallOrigin.isHomebrewCask(appBundleURL: bundleURL)
             // Mirror Trimmy: disable Sparkle entirely for unsigned/dev runs to avoid dialogs and signature errors.
-            let canUseSparkle = isBundledApp && isSigned
+            let canUseSparkle = isBundledApp && isSigned && !isHomebrew
         #else
             let canUseSparkle = false
         #endif
@@ -72,6 +80,7 @@ final class SparkleController: NSObject {
                 userDriverDelegate: nil
             )
             controller.automaticallyChecksForUpdates = saved
+            controller.automaticallyDownloadsUpdates = saved
             controller.startUpdater()
             self.updater = controller
         #endif
@@ -87,6 +96,11 @@ final class SparkleController: NSObject {
             self.updater.automaticallyChecksForUpdates = newValue
             UserDefaults.standard.set(newValue, forKey: self.defaultsKey)
         }
+    }
+
+    var automaticallyDownloadsUpdates: Bool {
+        get { self.updater.automaticallyDownloadsUpdates }
+        set { self.updater.automaticallyDownloadsUpdates = newValue }
     }
 
     func checkForUpdates() {
