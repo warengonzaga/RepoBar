@@ -143,6 +143,21 @@ struct RepoSubmenuBuilder {
             ))]
         case .releases:
             let cachedReleaseCount = self.target.cachedRecentListCount(fullName: repo.title, kind: .releases)
+            let latestReleaseName = repo.source.latestRelease?.name
+            let badgeCountText = cachedReleaseCount.flatMap { $0 > 0 ? String($0) : nil }
+            let badgeAccessibilityLabel: String? = {
+                let name = latestReleaseName.flatMap { $0.isEmpty == false ? $0 : nil }
+                switch (name, badgeCountText) {
+                case let (name?, count?):
+                    return "Latest release \(name). \(count) releases."
+                case let (name?, nil):
+                    return "Latest release \(name)."
+                case let (nil, count?):
+                    return "Releases \(count)."
+                case (nil, nil):
+                    return nil
+                }
+            }()
             return [self.recentListSubmenuItem(RecentListConfig(
                 title: "Releases",
                 systemImage: "tag",
@@ -150,7 +165,9 @@ struct RepoSubmenuBuilder {
                 kind: .releases,
                 openTitle: "Open Releases",
                 openAction: #selector(self.target.openReleases),
-                badgeText: cachedReleaseCount.flatMap { $0 > 0 ? String($0) : nil }
+                badgePrefixText: latestReleaseName,
+                badgeText: badgeCountText,
+                badgeAccessibilityLabel: badgeAccessibilityLabel
             ))]
         case .changelog:
             let presentation = self.target.cachedChangelogPresentation(
@@ -403,7 +420,31 @@ struct RepoSubmenuBuilder {
         let kind: RepoRecentMenuKind
         let openTitle: String
         let openAction: Selector
+        let badgePrefixText: String?
         let badgeText: String?
+        let badgeAccessibilityLabel: String?
+
+        init(
+            title: String,
+            systemImage: String,
+            fullName: String,
+            kind: RepoRecentMenuKind,
+            openTitle: String,
+            openAction: Selector,
+            badgePrefixText: String? = nil,
+            badgeText: String?,
+            badgeAccessibilityLabel: String? = nil
+        ) {
+            self.title = title
+            self.systemImage = systemImage
+            self.fullName = fullName
+            self.kind = kind
+            self.openTitle = openTitle
+            self.openAction = openAction
+            self.badgePrefixText = badgePrefixText
+            self.badgeText = badgeText
+            self.badgeAccessibilityLabel = badgeAccessibilityLabel
+        }
     }
 
     private func recentListSubmenuItem(_ config: RecentListConfig) -> NSMenuItem {
@@ -429,7 +470,9 @@ struct RepoSubmenuBuilder {
         let row = RecentListSubmenuRowView(
             title: config.title,
             systemImage: config.systemImage,
-            badgeText: config.badgeText
+            badgePrefixText: config.badgePrefixText,
+            badgeText: config.badgeText,
+            badgeAccessibilityLabel: config.badgeAccessibilityLabel
         )
         return self.menuBuilder.viewItem(for: row, enabled: true, highlightable: true, submenu: submenu)
     }
