@@ -56,11 +56,12 @@ final class ChangelogMenuCoordinator {
 
     private func refreshChangelogMenu(menu: NSMenu, entry: ChangelogMenuEntry) async {
         let now = Date()
-        if let cached = self.cache[entry.fullName],
-           now.timeIntervalSince(cached.fetchedAt) <= AppLimits.Changelog.cacheTTL
-        {
-            self.applyResult(cached.result, to: menu)
-            return
+        if let cached = self.cache[entry.fullName] {
+            let isFresh = now.timeIntervalSince(cached.fetchedAt) <= AppLimits.Changelog.cacheTTL
+            if isFresh {
+                self.applyResult(cached.result, to: menu)
+                return
+            }
         }
 
         if let cached = self.cache[entry.fullName] {
@@ -131,7 +132,9 @@ final class ChangelogMenuCoordinator {
                 return ChangelogFetchResult(result: .missing, parsed: nil)
             }
             let data = try await self.appState.github.repoFileContents(owner: owner, name: name, path: match.path)
-            let text = String(decoding: data, as: UTF8.self)
+            guard let text = String(bytes: data, encoding: .utf8) else {
+                return ChangelogFetchResult(result: .failure("Changelog is not UTF-8"), parsed: nil)
+            }
             guard text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false else {
                 return ChangelogFetchResult(result: .missing, parsed: nil)
             }
@@ -152,7 +155,7 @@ final class ChangelogMenuCoordinator {
     private func loadLocalChangelog(root: URL) -> ChangelogLocalResult? {
         guard let fileURL = self.localChangelogURL(root: root) else { return nil }
         guard let data = try? Data(contentsOf: fileURL) else { return nil }
-        let text = String(decoding: data, as: UTF8.self)
+        guard let text = String(bytes: data, encoding: .utf8) else { return nil }
         guard text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false else { return nil }
         let (truncatedText, isTruncated) = self.truncateMarkdown(text)
         let content = ChangelogContent(
@@ -223,7 +226,7 @@ final class ChangelogMenuCoordinator {
     ]
 
     private func makeCacheEntry(fetch: ChangelogFetchResult) -> ChangelogCacheEntry {
-        return ChangelogCacheEntry(
+        ChangelogCacheEntry(
             fetchedAt: Date(),
             result: fetch.result,
             parsed: fetch.parsed,

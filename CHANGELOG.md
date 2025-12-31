@@ -6,6 +6,7 @@
 - Changelog submenu: move under Open in GitHub, make preview scrollable, and show entry counts since last release.
 - Improve menu loading UX (repo loading row, earlier contribution fetch) and restore markdown formatting in changelog preview.
 - Fix settings login to use default GitHub credentials when blank, refresh after sign-in, and avoid stuck state.
+- Dev: SwiftLint cleanup in changelog loader.
 - iOS: fix light/dark glass styling and switch to a full-screen login layout.
 - iOS: use the modern `UILaunchScreen` plist entry to avoid letterboxed launch.
 - iOS: add a close button to the Settings sheet.
