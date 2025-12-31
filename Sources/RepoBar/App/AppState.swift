@@ -34,6 +34,11 @@ final class AppState {
 
     init() {
         self.session.settings = self.settingsStore.load()
+        RepoBarLogging.bootstrapIfNeeded()
+        RepoBarLogging.configure(
+            verbosity: self.session.settings.loggingVerbosity,
+            fileLoggingEnabled: self.session.settings.fileLoggingEnabled
+        )
         _ = self.auth.loadTokens()
         Task {
             await self.github.setTokenProvider { @Sendable [weak self] () async throws -> OAuthTokens? in

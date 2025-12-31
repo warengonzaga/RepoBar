@@ -1,5 +1,5 @@
 import AppKit
-import OSLog
+import Logging
 import RepoBarCore
 
 enum TerminalApp: String, CaseIterable {
@@ -27,7 +27,7 @@ enum TerminalApp: String, CaseIterable {
 
     var displayName: String { self.rawValue }
 
-    private static let logger = Logger(subsystem: "com.steipete.repobar", category: "terminal")
+    private static let logger = RepoBarLogging.logger("terminal")
 
     var isInstalled: Bool {
         if self == .terminal { return true }
@@ -58,7 +58,7 @@ enum TerminalApp: String, CaseIterable {
     }
 
     func open(at url: URL, rootBookmarkData: Data?, ghosttyOpenMode: GhosttyOpenMode = .tab) {
-        Self.logger.info("Open terminal: \(self.displayName, privacy: .public) mode=\(ghosttyOpenMode.rawValue, privacy: .public) path=\(url.path, privacy: .private)")
+        Self.logger.info("Open terminal: \(self.displayName) mode=\(ghosttyOpenMode.rawValue) path=\(url.path)")
         if self == .ghostty, ghosttyOpenMode == .newWindow {
             if self.openGhosttyNewWindow(at: url, rootBookmarkData: rootBookmarkData) {
                 return
@@ -136,7 +136,7 @@ enum TerminalApp: String, CaseIterable {
         do {
             try process.run()
         } catch {
-            Self.logger.error("Failed to run osascript: \(error.localizedDescription, privacy: .public)")
+            Self.logger.error("Failed to run osascript: \(error.localizedDescription)")
             return false
         }
         process.waitUntilExit()
@@ -144,17 +144,17 @@ enum TerminalApp: String, CaseIterable {
         let stderr = String(data: errorPipe.fileHandleForReading.readDataToEndOfFile(), encoding: .utf8) ?? ""
         if process.terminationStatus != 0 {
             if stderr.isEmpty == false {
-                Self.logger.error("osascript failed: \(stderr.trimmingCharacters(in: .whitespacesAndNewlines), privacy: .public)")
+                Self.logger.error("osascript failed: \(stderr.trimmingCharacters(in: .whitespacesAndNewlines))")
             } else {
                 Self.logger.error("osascript failed with status \(process.terminationStatus).")
             }
             if stdout.isEmpty == false {
-                Self.logger.debug("osascript stdout: \(stdout.trimmingCharacters(in: .whitespacesAndNewlines), privacy: .public)")
+                Self.logger.debug("osascript stdout: \(stdout.trimmingCharacters(in: .whitespacesAndNewlines))")
             }
             return false
         }
         if stderr.isEmpty == false {
-            Self.logger.debug("osascript stderr: \(stderr.trimmingCharacters(in: .whitespacesAndNewlines), privacy: .public)")
+            Self.logger.debug("osascript stderr: \(stderr.trimmingCharacters(in: .whitespacesAndNewlines))")
         }
         return true
     }

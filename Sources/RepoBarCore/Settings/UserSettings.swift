@@ -10,6 +10,8 @@ public struct UserSettings: Equatable, Codable {
     public var launchAtLogin = false
     public var debugPaneEnabled: Bool = false
     public var diagnosticsEnabled: Bool = false
+    public var loggingVerbosity: LogVerbosity = .info
+    public var fileLoggingEnabled: Bool = false
     public var githubHost: URL = .init(string: "https://github.com")!
     public var enterpriseHost: URL?
     public var loopbackPort: Int = 53682

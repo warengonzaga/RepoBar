@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.2 - 2025-12-31
+
+- Add swift-log integration with OSLog + optional file logging sink.
+- Add debug logging settings (verbosity + file logging) for macOS and iOS.
+
 ## 0.1.1 - 2025-12-31
 
 - Add repo submenu changelog preview (CHANGELOG.md or CHANGELOG) with inline markdown rendering.

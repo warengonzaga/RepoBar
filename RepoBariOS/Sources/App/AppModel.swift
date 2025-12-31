@@ -22,6 +22,11 @@ final class AppModel {
 
     init() {
         self.session.settings = self.settingsStore.load()
+        RepoBarLogging.bootstrapIfNeeded()
+        RepoBarLogging.configure(
+            verbosity: self.session.settings.loggingVerbosity,
+            fileLoggingEnabled: self.session.settings.fileLoggingEnabled
+        )
         Task {
             await self.github.setTokenProvider { @Sendable [weak self] () async throws -> OAuthTokens? in
                 try? await self?.auth.refreshIfNeeded()

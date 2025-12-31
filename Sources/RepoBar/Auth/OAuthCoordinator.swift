@@ -8,7 +8,6 @@ import RepoBarCore
 final class OAuthCoordinator {
     private let tokenStore = TokenStore.shared
     private let tokenRefresher = OAuthTokenRefresher()
-    private let logger = Logger(subsystem: "com.steipete.repobar", category: "oauth")
     private let signposter = OSSignposter(subsystem: "com.steipete.repobar", category: "oauth")
     private var lastHost: URL = .init(string: "https://github.com")!
     private var cachedTokens: OAuthTokens?

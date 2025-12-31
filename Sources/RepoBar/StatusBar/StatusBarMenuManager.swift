@@ -1,4 +1,5 @@
 import AppKit
+import Logging
 import OSLog
 import RepoBarCore
 
@@ -36,7 +37,7 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
         actionHandler: self
     )
     private let signposter = OSSignposter(subsystem: "com.steipete.repobar", category: "menu")
-    private let logger = Logger(subsystem: "com.steipete.repobar", category: "menu-state")
+    private let logger = RepoBarLogging.logger("menu-state")
     private weak var menuResizeWindow: NSWindow?
     private var lastMainMenuWidth: CGFloat?
     private var lastMainMenuSignature: MenuBuildSignature?
@@ -293,7 +294,7 @@ final class StatusBarMenuManager: NSObject, NSMenuDelegate {
     }
 
     private func logMenuEvent(_ message: String) {
-        self.logger.info("\(message, privacy: .public)")
+        self.logger.info("\(message)")
         Task { await DiagnosticsLogger.shared.message(message) }
     }
 

@@ -38,6 +38,21 @@ struct DebugSettingsView: View {
                     }
             }
 
+            Section("Logging") {
+                Picker("Verbosity", selection: self.$session.settings.loggingVerbosity) {
+                    ForEach(LogVerbosity.allCases, id: \.self) { level in
+                        Text(level.label).tag(level)
+                    }
+                }
+                Toggle("Log to file", isOn: self.$session.settings.fileLoggingEnabled)
+            }
+            .onChange(of: self.session.settings.loggingVerbosity) { _, _ in
+                self.applyLoggingSettings()
+            }
+            .onChange(of: self.session.settings.fileLoggingEnabled) { _, _ in
+                self.applyLoggingSettings()
+            }
+
             Section("Diagnostics") {
                 LabeledContent("Git binary") {
                     Text(self.gitExecutableInfo.path)
@@ -105,6 +120,14 @@ struct DebugSettingsView: View {
             return
         }
         self.diagnostics = await self.appState.diagnostics()
+    }
+
+    private func applyLoggingSettings() {
+        self.appState.persistSettings()
+        RepoBarLogging.configure(
+            verbosity: self.session.settings.loggingVerbosity,
+            fileLoggingEnabled: self.session.settings.fileLoggingEnabled
+        )
     }
 
     private func formatRate(_ snapshot: RateLimitSnapshot) -> String {

@@ -1,7 +1,7 @@
 import AppKit
 import Kingfisher
+import Logging
 import MenuBarExtraAccess
-import OSLog
 import RepoBarCore
 import SwiftUI
 
@@ -12,7 +12,7 @@ struct RepoBarApp: App {
     @State private var appState = AppState()
     @State private var isMenuPresented = false
     @State private var menuManager: StatusBarMenuManager?
-    private let logger = Logger(subsystem: "com.steipete.repobar", category: "menu-state")
+    private let logger = RepoBarLogging.logger("menu-state")
 
     @SceneBuilder
     var body: some Scene {
@@ -41,7 +41,7 @@ struct RepoBarApp: App {
     }
 
     private func logMenuEvent(_ message: String) {
-        self.logger.info("\(message, privacy: .public)")
+        self.logger.info("\(message)")
         Task { await DiagnosticsLogger.shared.message(message) }
     }
 

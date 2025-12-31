@@ -78,6 +78,16 @@ struct SettingsView: View {
                 .pickerStyle(.menu)
             }
 
+            Section("Debug") {
+                Picker("Logging", selection: $appModel.session.settings.loggingVerbosity) {
+                    ForEach(LogVerbosity.allCases, id: \.self) { level in
+                        Text(level.label).tag(level)
+                    }
+                }
+                .pickerStyle(.menu)
+                Toggle("Log to file", isOn: $appModel.session.settings.fileLoggingEnabled)
+            }
+
             Section("Diagnostics") {
                 Toggle("Enable diagnostics", isOn: $appModel.session.settings.diagnosticsEnabled)
             }
@@ -103,6 +113,10 @@ struct SettingsView: View {
                 appModel.requestRefresh()
             }
             Task { await DiagnosticsLogger.shared.setEnabled(appModel.session.settings.diagnosticsEnabled) }
+            RepoBarLogging.configure(
+                verbosity: appModel.session.settings.loggingVerbosity,
+                fileLoggingEnabled: appModel.session.settings.fileLoggingEnabled
+            )
             appModel.updateHeatmapRange()
         }
     }
