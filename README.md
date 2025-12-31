@@ -4,6 +4,14 @@ RepoBar keeps your GitHub work in view without opening a browser. Pin the repos 
 
 ![RepoBar screenshot](docs/assets/repobar.png)
 
+Homebrew (recommended):
+
+```bash
+brew install --cask steipete/tap/repobar
+```
+
+CI status • Releases • Activity & traffic • Local Git state
+
 ## Features
 
 - Live repo cards with CI status, activity preview, releases, and rate-limit awareness.
@@ -26,13 +34,5 @@ RepoBar signs in via browser OAuth and stores tokens securely in the macOS Keych
 ## Heads up
 
 This is the first public release (v0.1.0). There is still plenty to polish and expand, so expect rough edges and rapid iteration.
-
-## Download
-
-Homebrew (recommended):
-
-```bash
-brew install --cask steipete/tap/repobar
-```
 
 Direct download: `https://github.com/steipete/RepoBar/releases/latest`
