@@ -6,6 +6,7 @@ extension StatusBarMenuManager {
         Task { @MainActor in
             await self.appState.auth.logout()
             self.appState.session.account = .loggedOut
+            self.appState.session.hasStoredTokens = false
             self.appState.session.repositories = []
         }
     }

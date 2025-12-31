@@ -17,6 +17,7 @@ extension AppState {
                 host: self.defaultGitHubHost,
                 loopbackPort: self.defaultLoopbackPort
             )
+            self.session.hasStoredTokens = true
             if let user = try? await self.github.currentUser() {
                 self.session.account = .loggedIn(user)
                 self.session.lastError = nil

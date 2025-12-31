@@ -50,6 +50,7 @@ extension AppState {
             let now = Date()
             self.updateHeatmapRange(now: now)
             if self.auth.loadTokens() == nil {
+                self.session.hasStoredTokens = false
                 let matchNames = self.localMatchRepoNamesForLocalProjects(repos: [], includePinned: true)
                 let localSnapshot = await self.localRepoManager.snapshot(
                     rootPath: localSettings.rootPath,

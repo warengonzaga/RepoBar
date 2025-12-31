@@ -32,6 +32,7 @@ struct AccountSettingsView: View {
                                 Task {
                                     await self.appState.auth.logout()
                                     self.session.account = .loggedOut
+                                    self.session.hasStoredTokens = false
                                 }
                             }
                             .buttonStyle(.bordered)
@@ -132,6 +133,7 @@ struct AccountSettingsView: View {
                     host: self.session.settings.enterpriseHost ?? self.session.settings.githubHost,
                     loopbackPort: self.session.settings.loopbackPort
                 )
+                self.session.hasStoredTokens = true
                 if let user = try? await appState.github.currentUser() {
                     self.session.account = .loggedIn(user)
                     self.session.lastError = nil

@@ -10,6 +10,7 @@
 - Add swift-log integration with OSLog + optional file logging sink.
 - Add debug logging settings (verbosity + file logging) for macOS and iOS.
 - Fix contribution header heatmap sizing on first launch/loading.
+- Fix auto-opening settings when tokens already exist.
 
 ## 0.1.1 - 2025-12-31
 

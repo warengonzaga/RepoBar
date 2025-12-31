@@ -39,7 +39,8 @@ final class AppState {
             verbosity: self.session.settings.loggingVerbosity,
             fileLoggingEnabled: self.session.settings.fileLoggingEnabled
         )
-        _ = self.auth.loadTokens()
+        let storedTokens = self.auth.loadTokens()
+        self.session.hasStoredTokens = (storedTokens != nil)
         Task {
             await self.github.setTokenProvider { @Sendable [weak self] () async throws -> OAuthTokens? in
                 try? await self?.auth.refreshIfNeeded()

@@ -5,6 +5,7 @@ import RepoBarCore
 @Observable
 final class Session {
     var account: AccountState = .loggedOut
+    var hasStoredTokens = false
     var repositories: [Repository] = []
     var menuSnapshot: MenuSnapshot?
     var menuDisplayIndex: [String: RepositoryDisplayModel] = [:]
