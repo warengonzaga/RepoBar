@@ -7,6 +7,7 @@
 - iOS: add a close button to the Settings sheet.
 - iOS: switch GitHub auth callback to `https://repobar.app/oauth-callback`.
 - Site: add Apple App Site Association for `repobar.app` universal links.
+- iOS: add `webcredentials` associated domain for HTTPS auth callbacks.
 - iOS: silence AppIntents metadata build warnings.
 - iOS: add the RepoBar logo to the login screen and app icon.
 - Fix CLI: allow invoking bundled `repobarcli` directly (argv0 normalization).
