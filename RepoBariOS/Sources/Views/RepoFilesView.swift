@@ -78,7 +78,7 @@ private struct RepoFileListView: View {
             error = nil
         } catch {
             items = []
-            error = error.userFacingMessage
+            self.error = error.userFacingMessage
         }
     }
 }
@@ -141,7 +141,7 @@ private struct RepoFilePreviewView: View {
                 error = "Binary file preview not supported"
             }
         } catch {
-            error = error.userFacingMessage
+            self.error = error.userFacingMessage
         }
     }
 }

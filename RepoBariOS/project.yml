@@ -31,5 +31,16 @@ targets:
         SWIFT_STRICT_CONCURRENCY: complete
     info:
       path: Resources/Info.plist
+      properties:
+        CFBundleDisplayName: RepoBar
+        CFBundleShortVersionString: "$(MARKETING_VERSION)"
+        CFBundleVersion: "$(CURRENT_PROJECT_VERSION)"
+        CFBundleURLTypes:
+          - CFBundleURLName: com.steipete.repobar.auth
+            CFBundleURLSchemes:
+              - repobar
+        RepoBarKeychainAccessGroup: "$(AppIdentifierPrefix)com.steipete.repobar.shared"
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: true
     frameworks:
       - AuthenticationServices

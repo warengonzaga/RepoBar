@@ -30,31 +30,31 @@ final class RepoDetailModel {
         error = nil
         defer { isLoading = false }
 
-        async let pullsResult: Result<[RepoPullRequestSummary], Error> = capture {
+        async let pullsResult: Result<[RepoPullRequestSummary], Error> = capture { [self] in
             try await github.recentPullRequests(owner: repo.owner, name: repo.name, limit: AppLimits.RecentLists.limit)
         }
-        async let issuesResult: Result<[RepoIssueSummary], Error> = capture {
+        async let issuesResult: Result<[RepoIssueSummary], Error> = capture { [self] in
             try await github.recentIssues(owner: repo.owner, name: repo.name, limit: AppLimits.RecentLists.limit)
         }
-        async let releasesResult: Result<[RepoReleaseSummary], Error> = capture {
+        async let releasesResult: Result<[RepoReleaseSummary], Error> = capture { [self] in
             try await github.recentReleases(owner: repo.owner, name: repo.name, limit: AppLimits.RecentLists.limit)
         }
-        async let workflowsResult: Result<[RepoWorkflowRunSummary], Error> = capture {
+        async let workflowsResult: Result<[RepoWorkflowRunSummary], Error> = capture { [self] in
             try await github.recentWorkflowRuns(owner: repo.owner, name: repo.name, limit: AppLimits.RecentLists.limit)
         }
-        async let commitsResult: Result<RepoCommitList, Error> = capture {
+        async let commitsResult: Result<RepoCommitList, Error> = capture { [self] in
             try await github.recentCommits(owner: repo.owner, name: repo.name, limit: AppLimits.RepoCommits.totalLimit)
         }
-        async let discussionsResult: Result<[RepoDiscussionSummary], Error> = capture {
+        async let discussionsResult: Result<[RepoDiscussionSummary], Error> = capture { [self] in
             try await github.recentDiscussions(owner: repo.owner, name: repo.name, limit: AppLimits.RecentLists.limit)
         }
-        async let tagsResult: Result<[RepoTagSummary], Error> = capture {
+        async let tagsResult: Result<[RepoTagSummary], Error> = capture { [self] in
             try await github.recentTags(owner: repo.owner, name: repo.name, limit: AppLimits.RecentLists.limit)
         }
-        async let branchesResult: Result<[RepoBranchSummary], Error> = capture {
+        async let branchesResult: Result<[RepoBranchSummary], Error> = capture { [self] in
             try await github.recentBranches(owner: repo.owner, name: repo.name, limit: AppLimits.RecentLists.limit)
         }
-        async let contributorsResult: Result<[RepoContributorSummary], Error> = capture {
+        async let contributorsResult: Result<[RepoContributorSummary], Error> = capture { [self] in
             try await github.topContributors(owner: repo.owner, name: repo.name, limit: AppLimits.RecentLists.limit)
         }
 

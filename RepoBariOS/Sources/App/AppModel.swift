@@ -22,9 +22,9 @@ final class AppModel {
 
     init() {
         self.session.settings = self.settingsStore.load()
-        Task { [weak self] in
-            await self?.github.setTokenProvider {
-                try await self?.auth.refreshIfNeeded()
+        Task {
+            await self.github.setTokenProvider { @Sendable [weak self] () async throws -> OAuthTokens? in
+                try? await self?.auth.refreshIfNeeded()
             }
         }
         Task { await DiagnosticsLogger.shared.setEnabled(self.session.settings.diagnosticsEnabled) }
@@ -72,17 +72,12 @@ final class AppModel {
     func bootstrapIfNeeded() async {
         guard self.auth.loadTokens() != nil else { return }
         self.session.account = .loggingIn
-        do {
-            if let user = try? await self.github.currentUser() {
-                self.session.account = .loggedIn(user)
-                self.session.lastError = nil
-                await self.refresh()
-            } else {
-                self.session.account = .loggedIn(UserIdentity(username: "", host: self.session.settings.githubHost))
-            }
-        } catch {
-            self.session.account = .loggedOut
-            self.session.lastError = error.userFacingMessage
+        if let user = try? await self.github.currentUser() {
+            self.session.account = .loggedIn(user)
+            self.session.lastError = nil
+            await self.refresh()
+        } else {
+            self.session.account = .loggedIn(UserIdentity(username: "", host: self.session.settings.githubHost))
         }
     }
 
@@ -329,17 +324,19 @@ final class AppModel {
             return GlobalActivityResult(events: [], commits: [], error: nil, commitError: nil)
         }
         let repoEvents = repos.flatMap(\.activityEvents)
-        async let activityResult: Result<[ActivityEvent], Error> = self.capture {
-            try await self.github.userActivityEvents(
+        let activityScope = self.session.settings.appearance.activityScope
+        let github = self.github
+        async let activityResult: Result<[ActivityEvent], Error> = self.capture { [github] in
+            try await github.userActivityEvents(
                 username: username,
-                scope: self.session.settings.appearance.activityScope,
+                scope: activityScope,
                 limit: AppLimits.GlobalActivity.limit
             )
         }
-        async let commitResult: Result<[RepoCommitSummary], Error> = self.capture {
-            try await self.github.userCommitEvents(
+        async let commitResult: Result<[RepoCommitSummary], Error> = self.capture { [github] in
+            try await github.userCommitEvents(
                 username: username,
-                scope: self.session.settings.appearance.activityScope,
+                scope: activityScope,
                 limit: AppLimits.GlobalCommits.limit
             )
         }
@@ -370,7 +367,7 @@ final class AppModel {
             userEvents: activityEvents,
             repoEvents: repoEvents,
             username: username,
-            scope: self.session.settings.appearance.activityScope,
+            scope: activityScope,
             limit: AppLimits.GlobalActivity.limit
         )
 

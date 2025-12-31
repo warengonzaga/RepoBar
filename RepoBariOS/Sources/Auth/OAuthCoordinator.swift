@@ -109,11 +109,14 @@ final class OAuthCoordinator: NSObject, ASWebAuthenticationPresentationContextPr
     }
 
     func presentationAnchor(for _: ASWebAuthenticationSession) -> ASPresentationAnchor {
-        let window = UIApplication.shared.connectedScenes
-            .compactMap { $0 as? UIWindowScene }
-            .flatMap { $0.windows }
-            .first { $0.isKeyWindow }
-        return window ?? ASPresentationAnchor()
+        let scenes = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }
+        if let window = scenes.flatMap(\.windows).first(where: { $0.isKeyWindow }) {
+            return window
+        }
+        if let scene = scenes.first {
+            return UIWindow(windowScene: scene)
+        }
+        return UIWindow(frame: .zero)
     }
 
     private func startWebAuthentication(url: URL, callbackScheme: String) async throws -> URL {

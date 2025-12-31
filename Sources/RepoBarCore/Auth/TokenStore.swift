@@ -35,10 +35,10 @@ public struct TokenStore: Sendable {
 
     public init(
         service: String = "com.steipete.repobar.auth",
-        accessGroup: String? = Self.defaultAccessGroup()
+        accessGroup: String? = nil
     ) {
         self.service = service
-        self.accessGroup = accessGroup
+        self.accessGroup = accessGroup ?? Self.defaultAccessGroup()
     }
 
     public func save(tokens: OAuthTokens) throws {
@@ -130,18 +130,27 @@ public struct TokenStore: Sendable {
     }
 }
 
-private extension TokenStore {
+extension TokenStore {
     static let sharedAccessGroupSuffix = "com.steipete.repobar.shared"
 
     static func defaultAccessGroup() -> String? {
-        guard let task = SecTaskCreateFromSelf(nil),
-              let entitlement = SecTaskCopyValueForEntitlement(task, "keychain-access-groups" as CFString, nil)
-        else {
+        #if os(macOS)
+            guard let task = SecTaskCreateFromSelf(nil),
+                  let entitlement = SecTaskCopyValueForEntitlement(task, "keychain-access-groups" as CFString, nil)
+            else {
+                return nil
+            }
+            if let groups = entitlement as? [String] {
+                return groups.first(where: { $0.hasSuffix(Self.sharedAccessGroupSuffix) })
+            }
             return nil
-        }
-        if let groups = entitlement as? [String] {
-            return groups.first(where: { $0.hasSuffix(Self.sharedAccessGroupSuffix) })
-        }
-        return nil
+        #else
+            if let group = Bundle.main.object(forInfoDictionaryKey: "RepoBarKeychainAccessGroup") as? String {
+                if group.isEmpty == false {
+                    return group
+                }
+            }
+            return nil
+        #endif
     }
 }
