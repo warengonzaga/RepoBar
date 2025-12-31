@@ -2,17 +2,17 @@ import Foundation
 
 enum AppLimits {
     enum GlobalActivity {
-        static let limit: Int = 20
+        static let limit: Int = 25
         static let previewLimit: Int = 5
     }
 
     enum GlobalCommits {
-        static let limit: Int = 20
+        static let limit: Int = 25
         static let previewLimit: Int = 5
     }
 
     enum RepoActivity {
-        static let limit: Int = 10
+        static let limit: Int = 25
         static let previewLimit: Int = 5
     }
 
@@ -26,7 +26,7 @@ enum AppLimits {
 
     enum RepoCommits {
         static let previewLimit: Int = 5
-        static let moreLimit: Int = 20
+        static let moreLimit: Int = 25
         static let totalLimit: Int = previewLimit + moreLimit
     }
 

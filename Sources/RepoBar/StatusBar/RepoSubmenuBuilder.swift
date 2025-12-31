@@ -168,6 +168,7 @@ struct RepoSubmenuBuilder {
         let commitCount = self.target.cachedRecentCommitCount(fullName: repo.title)
         let commits = Array((cachedCommits ?? []).prefix(AppLimits.RepoCommits.totalLimit))
         let commitPreview = Array(commits.prefix(AppLimits.RepoCommits.previewLimit))
+        let commitRemainder = Array(commits.dropFirst(commitPreview.count))
         menu.addItem(.separator())
         menu.addItem(self.menuBuilder.actionItem(
             title: "Open Commits",
@@ -180,13 +181,14 @@ struct RepoSubmenuBuilder {
             menu.addItem(self.menuBuilder.infoItem(message))
         } else {
             commitPreview.forEach { menu.addItem(self.menuBuilder.commitMenuItem(for: $0)) }
-            if commits.count > commitPreview.count {
-                menu.addItem(self.repoCommitsMoreMenuItem(commits: commits))
+            if commitRemainder.isEmpty == false {
+                menu.addItem(self.repoCommitsMoreMenuItem(commits: commitRemainder))
             }
         }
 
         let events = Array(repo.activityEvents.prefix(AppLimits.RepoActivity.limit))
         let activityPreview = Array(events.prefix(AppLimits.RepoActivity.previewLimit))
+        let activityRemainder = Array(events.dropFirst(activityPreview.count))
         let hasActivityLink = repo.activityURL != nil
         if hasActivityLink || activityPreview.isEmpty == false {
             menu.addItem(.separator())
@@ -200,8 +202,8 @@ struct RepoSubmenuBuilder {
             }
             if activityPreview.isEmpty == false {
                 activityPreview.forEach { menu.addItem(self.menuBuilder.activityMenuItem(for: $0)) }
-                if events.count > activityPreview.count {
-                    menu.addItem(self.repoActivityMoreMenuItem(events: events))
+                if activityRemainder.isEmpty == false {
+                    menu.addItem(self.repoActivityMoreMenuItem(events: activityRemainder))
                 }
             }
         }

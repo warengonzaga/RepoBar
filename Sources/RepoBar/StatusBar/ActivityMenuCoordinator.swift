@@ -31,14 +31,16 @@ final class ActivityMenuCoordinator {
         let commitEvents = self.appState.session.globalCommitEvents
         let activityEvents = self.appState.session.globalActivityEvents
         let commitPreview = Array(commitEvents.prefix(AppLimits.GlobalCommits.previewLimit))
+        let commitRemainder = Array(commitEvents.dropFirst(commitPreview.count))
         let activityPreview = Array(activityEvents.prefix(AppLimits.GlobalActivity.previewLimit))
+        let activityRemainder = Array(activityEvents.dropFirst(activityPreview.count))
 
         if commitPreview.isEmpty == false {
             menu.addItem(.separator())
             menu.addItem(self.menuBuilder.infoItem("Commits"))
             commitPreview.forEach { menu.addItem(self.commitMenuItem(for: $0)) }
-            if commitEvents.count > commitPreview.count {
-                menu.addItem(self.moreCommitsMenuItem(commits: commitEvents))
+            if commitRemainder.isEmpty == false {
+                menu.addItem(self.moreCommitsMenuItem(commits: commitRemainder))
             }
         } else if let error = self.appState.session.globalCommitError {
             menu.addItem(.separator())
@@ -49,8 +51,8 @@ final class ActivityMenuCoordinator {
             menu.addItem(.separator())
             menu.addItem(self.menuBuilder.infoItem("Activity"))
             activityPreview.forEach { menu.addItem(self.activityMenuItem(for: $0)) }
-            if activityEvents.count > activityPreview.count {
-                menu.addItem(self.moreActivityMenuItem(events: activityEvents))
+            if activityRemainder.isEmpty == false {
+                menu.addItem(self.moreActivityMenuItem(events: activityRemainder))
             }
         } else if let error = self.appState.session.globalActivityError {
             menu.addItem(.separator())
