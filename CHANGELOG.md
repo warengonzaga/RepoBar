@@ -1,14 +1,11 @@
 # Changelog
 
-## 0.1.3 - 2025-12-31
+## 0.1.2 - 2025-12-31
 
 - CLI: add repo submenu list commands (releases, CI runs, discussions, tags, branches, contributors, commits, activity).
 - CLI: add local actions (sync/rebase/reset), local branch/worktree listings, Finder/Terminal open, and checkout.
 - CLI: add pin/hide and settings show/set commands; update CLI docs for parity.
 - CLI: normalize `local ...`, `open ...`, and `settings ...` subcommands for friendlier usage.
-
-## 0.1.2 - 2025-12-31
-
 - Add swift-log integration with OSLog + optional file logging sink.
 - Add debug logging settings (verbosity + file logging) for macOS and iOS.
 
