@@ -11,6 +11,9 @@ final class OAuthCoordinator: NSObject, ASWebAuthenticationPresentationContextPr
     private var lastHost: URL = RepoBarAuthDefaults.githubHost
     private var cachedTokens: OAuthTokens?
     private var hasLoadedTokens = false
+    private static let callbackHost = "repobar.app"
+    private static let callbackPath = "/oauth-callback"
+    private static let callbackURL = URL(string: "https://repobar.app/oauth-callback")!
 
     override init() {
         let store = TokenStore.shared
@@ -34,7 +37,7 @@ final class OAuthCoordinator: NSObject, ASWebAuthenticationPresentationContextPr
 
         let pkce = PKCE.generate()
         let state = UUID().uuidString
-        let redirectURL = URL(string: "repobar://oauth-callback")!
+        let redirectURL = Self.callbackURL
 
         var components = URLComponents(url: authEndpoint, resolvingAgainstBaseURL: false)!
         components.queryItems = [
@@ -47,7 +50,7 @@ final class OAuthCoordinator: NSObject, ASWebAuthenticationPresentationContextPr
         ]
         guard let authorizeURL = components.url else { throw URLError(.badURL) }
 
-        let callbackURL = try await self.startWebAuthentication(url: authorizeURL, callbackScheme: "repobar")
+        let callbackURL = try await self.startWebAuthentication(url: authorizeURL)
         guard let callbackComponents = URLComponents(url: callbackURL, resolvingAgainstBaseURL: false) else {
             throw URLError(.badURL)
         }
@@ -119,9 +122,13 @@ final class OAuthCoordinator: NSObject, ASWebAuthenticationPresentationContextPr
         return UIWindow(frame: .zero)
     }
 
-    private func startWebAuthentication(url: URL, callbackScheme: String) async throws -> URL {
+    private func startWebAuthentication(url: URL) async throws -> URL {
         try await withCheckedThrowingContinuation { continuation in
-            let session = ASWebAuthenticationSession(url: url, callbackURLScheme: callbackScheme) { [weak self] callbackURL, error in
+            let callback = ASWebAuthenticationSession.Callback.https(
+                host: Self.callbackHost,
+                path: Self.callbackPath
+            )
+            let session = ASWebAuthenticationSession(url: url, callback: callback) { [weak self] callbackURL, error in
                 self?.authSession = nil
                 if let error {
                     continuation.resume(throwing: error)
