@@ -51,7 +51,7 @@ struct ChangelogCommand: CommanderRunnableCommand {
         let changelogURL = try resolveChangelogURL(explicitPath: path)
         let markdown = try String(contentsOf: changelogURL, encoding: .utf8)
         let parsed = ChangelogParser.parse(markdown: markdown)
-        let presentation = ChangelogParser.presentation(parsed: parsed, releaseTag: releaseTag)
+        let presentation = ChangelogParser.presentation(parsed: parsed, releaseTag: self.releaseTag)
 
         let outputSections = parsed.sections.map { section in
             ChangelogSectionOutput(title: section.title, entryCount: section.entryCount)
@@ -93,7 +93,7 @@ private func resolveChangelogURL(explicitPath: String?) throws -> URL {
     }
 
     let roots = [gitRootURL(), URL(fileURLWithPath: FileManager.default.currentDirectoryPath, isDirectory: true)]
-        .compactMap { $0 }
+        .compactMap(\.self)
     let candidates = ["CHANGELOG.md", "CHANGELOG"]
     let manager = FileManager.default
 

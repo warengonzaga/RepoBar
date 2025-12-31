@@ -96,17 +96,12 @@ struct RepoCommand: CommanderRunnableCommand {
     }
 
     mutating func run() async throws {
-        guard let repoName, !repoName.isEmpty else {
-            throw ValidationError("Missing repository name (owner/name)")
-        }
-        let parts = repoName.split(separator: "/", maxSplits: 1).map(String.init)
-        guard parts.count == 2 else {
-            throw ValidationError("Repository must be in owner/name format")
-        }
+        let repoName = try requireRepoName(self.repoName)
+        let (owner, name) = try parseRepoName(repoName)
 
         let context = try await makeAuthenticatedClient()
         let client = context.client
-        let repo = try await client.fullRepository(owner: parts[0], name: parts[1])
+        let repo = try await client.fullRepository(owner: owner, name: name)
 
         if self.output.jsonOutput {
             let output = RepoDetailOutput(
@@ -374,33 +369,6 @@ struct RefreshCommand: CommanderRunnableCommand {
     }
 }
 
-private struct AuthContext {
-    let client: GitHubClient
-    let settings: UserSettings
-    let host: URL
-}
-
-private func makeAuthenticatedClient() async throws -> AuthContext {
-    guard (try? TokenStore.shared.load()) != nil else {
-        throw CLIError.notAuthenticated
-    }
-
-    let settings = SettingsStore().load()
-    let host = settings.enterpriseHost ?? settings.githubHost
-    let apiHost: URL = if let enterprise = settings.enterpriseHost {
-        enterprise.appending(path: "/api/v3")
-    } else {
-        RepoBarAuthDefaults.apiHost
-    }
-
-    let client = GitHubClient()
-    await client.setAPIHost(apiHost)
-    await client.setTokenProvider { @Sendable () async throws -> OAuthTokens? in
-        try await OAuthTokenRefresher().refreshIfNeeded(host: host)
-    }
-    return AuthContext(client: client, settings: settings, host: host)
-}
-
 private func refreshPinned(_ pinned: [String], client: GitHubClient) async throws -> [RefreshRepositoryOutput] {
     try await withThrowingTaskGroup(of: RefreshRepositoryOutput.self) { group in
         for name in pinned {
@@ -432,10 +400,6 @@ private func refreshPinned(_ pinned: [String], client: GitHubClient) async throw
         }
         return results.sorted { $0.fullName.localizedCaseInsensitiveCompare($1.fullName) == .orderedAscending }
     }
-}
-
-private func makeRepoURL(baseHost: URL, owner: String, name: String) -> URL {
-    baseHost.appending(path: "/\(owner)/\(name)")
 }
 
 private struct RepoIssuesOutput: Encodable {

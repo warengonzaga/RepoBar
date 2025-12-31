@@ -25,4 +25,11 @@ struct CLISelectionTests {
         #expect(RepoFilterSelection.issues.onlyWith == RepositoryOnlyWith(requireIssues: true))
         #expect(RepoFilterSelection.prs.onlyWith == RepositoryOnlyWith(requirePRs: true))
     }
+
+    @Test
+    func activityScopeParsesValues() {
+        #expect(GlobalActivityScope(argument: "all") == .allActivity)
+        #expect(GlobalActivityScope(argument: "my") == .myActivity)
+        #expect(GlobalActivityScope(argument: "mine") == .myActivity)
+    }
 }

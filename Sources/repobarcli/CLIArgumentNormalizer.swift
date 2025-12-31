@@ -22,6 +22,51 @@ enum CLIArgumentNormalizer {
         if normalized.count > 1, ["pr", "prs"].contains(normalized[1]) {
             normalized[1] = "pulls"
         }
+        if normalized.count > 1, ["runs", "workflow", "workflows"].contains(normalized[1]) {
+            normalized[1] = "ci"
+        }
+
+        if normalized.count > 2, normalized[1] == "local" {
+            let subcommand = normalized[2].lowercased()
+            let mapped: String? = switch subcommand {
+            case "sync": "local-sync"
+            case "rebase": "local-rebase"
+            case "reset": "local-reset"
+            case "branches": "local-branches"
+            case "worktrees": "worktrees"
+            default: nil
+            }
+            if let mapped {
+                normalized[1] = mapped
+                normalized.remove(at: 2)
+            }
+        }
+
+        if normalized.count > 2, normalized[1] == "open" {
+            let subcommand = normalized[2].lowercased()
+            let mapped: String? = switch subcommand {
+            case "finder": "open-finder"
+            case "terminal": "open-terminal"
+            default: nil
+            }
+            if let mapped {
+                normalized[1] = mapped
+                normalized.remove(at: 2)
+            }
+        }
+
+        if normalized.count > 2, normalized[1] == "settings" {
+            let subcommand = normalized[2].lowercased()
+            let mapped: String? = switch subcommand {
+            case "show": "settings-show"
+            case "set": "settings-set"
+            default: nil
+            }
+            if let mapped {
+                normalized[1] = mapped
+                normalized.remove(at: 2)
+            }
+        }
 
         return normalized
     }
