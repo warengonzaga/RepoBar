@@ -8,6 +8,7 @@
 - CLI: normalize `local ...`, `open ...`, and `settings ...` subcommands for friendlier usage.
 - Add swift-log integration with OSLog + optional file logging sink.
 - Add debug logging settings (verbosity + file logging) for macOS and iOS.
+- Fix contribution header heatmap sizing on first launch/loading.
 
 ## 0.1.1 - 2025-12-31
 

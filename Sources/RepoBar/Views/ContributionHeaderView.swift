@@ -22,19 +22,15 @@ struct ContributionHeaderView: View {
     }
 
     var body: some View {
-        if !self.hasCachedHeatmap, !self.session.contributionIsLoading {
-            EmptyView()
-        } else {
-            VStack(alignment: .leading, spacing: 4) {
-                Text("Contributions · \(self.displayName) · last \(self.session.settings.heatmap.span.label)")
-                    .font(.caption2)
-                    .foregroundStyle(MenuHighlightStyle.secondary(self.isHighlighted))
-                self.content
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .task(id: self.username) {
-                await self.appState.loadContributionHeatmapIfNeeded(for: self.username)
-            }
+        VStack(alignment: .leading, spacing: 4) {
+            Text("Contributions · \(self.displayName) · last \(self.session.settings.heatmap.span.label)")
+                .font(.caption2)
+                .foregroundStyle(MenuHighlightStyle.secondary(self.isHighlighted))
+            self.content
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .task(id: self.username) {
+            await self.appState.loadContributionHeatmapIfNeeded(for: self.username)
         }
     }
 
@@ -77,5 +73,5 @@ struct ContributionHeaderView: View {
     }
 
     private static let graphHeight: CGFloat = 48
-    private static let loadingHeight: CGFloat = 72
+    private static let loadingHeight: CGFloat = graphHeight
 }
