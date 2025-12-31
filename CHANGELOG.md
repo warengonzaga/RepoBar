@@ -8,6 +8,7 @@
 - Changelog UX: submenu preview improvements plus Markdown rendering upgrades (block layout, scrollable preview, header alignment).
 - Changelog UX: show the first released section headline in the submenu badge (skips Unreleased).
 - Changelog UX: prefetch on repo submenu open and refresh the badge after load.
+- Changelog UX: switch to Swift Markdown AST parsing for cross-platform block rendering.
 - Menu customization: Display settings to reorder/hide main menu and repo submenu items (reset to defaults), with spacing tweaks.
 - Logging/diagnostics: swift-log integration with OSLog + optional file logging; debug logging settings for macOS/iOS.
 - Reliability: menu rehydrate on attach, invalidate empty menu cache, stabilize contribution header heatmap size, limit “More” submenus to 20 entries.

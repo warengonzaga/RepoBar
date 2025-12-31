@@ -22,6 +22,7 @@ let package = Package(
         .package(url: "https://github.com/apollographql/apollo-ios", from: "2.0.3"),
         .package(url: "https://github.com/onevcat/Kingfisher", from: "8.6.0"),
         .package(url: "https://github.com/steipete/Swiftdansi", from: "0.1.1"),
+        .package(url: "https://github.com/apple/swift-markdown", from: "0.7.3"),
     ],
     targets: [
         .target(
@@ -29,6 +30,7 @@ let package = Package(
             dependencies: [
                 .product(name: "Apollo", package: "apollo-ios"),
                 .product(name: "Logging", package: "swift-log"),
+                .product(name: "Markdown", package: "swift-markdown"),
             ],
             swiftSettings: [
                 .enableUpcomingFeature("StrictConcurrency"),

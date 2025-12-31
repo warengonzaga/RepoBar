@@ -63,11 +63,12 @@ final class ChangelogMenuCoordinator {
         Task { @MainActor [weak self] in
             guard let self else { return }
             let now = Date()
-            if let cached = self.cache[fullName],
-               now.timeIntervalSince(cached.fetchedAt) <= AppLimits.Changelog.cacheTTL
-            {
-                self.menuBuilder.updateChangelogRow(fullName: fullName, releaseTag: releaseTag)
-                return
+            if let cached = self.cache[fullName] {
+                let isFresh = now.timeIntervalSince(cached.fetchedAt) <= AppLimits.Changelog.cacheTTL
+                if isFresh {
+                    self.menuBuilder.updateChangelogRow(fullName: fullName, releaseTag: releaseTag)
+                    return
+                }
             }
 
             let fetch = await self.loadChangelog(fullName: fullName, localPath: localPath)

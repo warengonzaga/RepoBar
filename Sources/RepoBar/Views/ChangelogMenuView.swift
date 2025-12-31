@@ -1,3 +1,4 @@
+import RepoBarCore
 import SwiftUI
 
 struct ChangelogMenuView: View {
@@ -57,7 +58,7 @@ private struct MarkdownTextView: View {
     let isHighlighted: Bool
 
     var body: some View {
-        let blocks = ChangelogMarkdownPreviewParser.parse(markdown: self.markdown)
+        let blocks = MarkdownBlockParser.parse(markdown: self.markdown)
 
         VStack(alignment: .leading, spacing: 4) {
             ForEach(blocks.indices, id: \.self) { index in
@@ -71,144 +72,8 @@ private struct MarkdownTextView: View {
     }
 }
 
-private enum ChangelogMarkdownBlock: Equatable {
-    case heading(level: Int, text: String)
-    case listItem(marker: String, text: String, indentLevel: Int)
-    case paragraphLine(text: String)
-    case codeBlock(text: String)
-    case blankLine
-}
-
-private enum ChangelogMarkdownPreviewParser {
-    static func parse(markdown: String) -> [ChangelogMarkdownBlock] {
-        let normalized = markdown.replacingOccurrences(of: "\r\n", with: "\n")
-        let lines = normalized.split(omittingEmptySubsequences: false, whereSeparator: \.isNewline)
-
-        var blocks: [ChangelogMarkdownBlock] = []
-        var inCodeBlock = false
-        var codeLines: [String] = []
-
-        func flushCodeBlockIfNeeded() {
-            guard codeLines.isEmpty == false else { return }
-            blocks.append(.codeBlock(text: codeLines.joined(separator: "\n")))
-            codeLines.removeAll()
-        }
-
-        for raw in lines {
-            let line = String(raw)
-            let trimmed = line.trimmingCharacters(in: .whitespaces)
-
-            if trimmed.hasPrefix("```") {
-                if inCodeBlock {
-                    inCodeBlock = false
-                    flushCodeBlockIfNeeded()
-                } else {
-                    inCodeBlock = true
-                    codeLines.removeAll()
-                }
-                continue
-            }
-
-            if inCodeBlock {
-                codeLines.append(line)
-                continue
-            }
-
-            if trimmed.isEmpty {
-                blocks.append(.blankLine)
-                continue
-            }
-
-            if let (level, title) = self.heading(from: trimmed) {
-                blocks.append(.heading(level: level, text: title))
-                continue
-            }
-
-            if let list = self.listItem(from: line) {
-                blocks.append(.listItem(marker: list.marker, text: list.text, indentLevel: list.indentLevel))
-                continue
-            }
-
-            if case let .listItem(marker, text, indentLevel)? = blocks.last,
-               self.leadingIndentWidth(line) >= (indentLevel + 1) * 2
-            {
-                blocks[blocks.count - 1] = .listItem(
-                    marker: marker,
-                    text: text + "\n" + trimmed,
-                    indentLevel: indentLevel
-                )
-                continue
-            }
-
-            blocks.append(.paragraphLine(text: line))
-        }
-
-        if inCodeBlock {
-            flushCodeBlockIfNeeded()
-        }
-
-        return blocks
-    }
-
-    private static func heading(from trimmed: String) -> (Int, String)? {
-        guard trimmed.hasPrefix("#") else { return nil }
-        let hashes = trimmed.prefix { $0 == "#" }
-        let level = hashes.count
-        guard level >= 1, level <= 3 else { return nil }
-        let remainder = trimmed.dropFirst(level)
-        guard remainder.first == " " else { return nil }
-        let title = remainder.dropFirst().trimmingCharacters(in: .whitespaces)
-        return title.isEmpty ? nil : (level, title)
-    }
-
-    private static func listItem(from line: String) -> (marker: String, text: String, indentLevel: Int)? {
-        let indentWidth = self.leadingIndentWidth(line)
-        let indentLevel = max(0, indentWidth / 2)
-        let trimmed = line.trimmingCharacters(in: .whitespaces)
-
-        if trimmed.hasPrefix("- ") || trimmed.hasPrefix("* ") || trimmed.hasPrefix("+ ") {
-            return ("•", String(trimmed.dropFirst(2)), indentLevel)
-        }
-
-        var index = trimmed.startIndex
-        var digits = ""
-        while index < trimmed.endIndex, trimmed[index].isNumber {
-            digits.append(trimmed[index])
-            index = trimmed.index(after: index)
-        }
-        if digits.isEmpty == false,
-           index < trimmed.endIndex,
-           trimmed[index] == "."
-        {
-            let afterDot = trimmed.index(after: index)
-            if afterDot < trimmed.endIndex, trimmed[afterDot] == " " {
-                let textStart = trimmed.index(after: afterDot)
-                return ("\(digits).", String(trimmed[textStart...]), indentLevel)
-            }
-        }
-
-        return nil
-    }
-
-    private static func leadingIndentWidth(_ line: String) -> Int {
-        var width = 0
-        for ch in line {
-            if ch == " " {
-                width += 1
-                continue
-            }
-            if ch == "\t" {
-                width += 4
-                continue
-            }
-            break
-        }
-        return width
-    }
-}
-
 private struct ChangelogMarkdownBlockView: View {
-    let block: ChangelogMarkdownBlock
+    let block: MarkdownBlock
     let isHighlighted: Bool
 
     var body: some View {
@@ -232,7 +97,7 @@ private struct ChangelogMarkdownBlockView: View {
             .multilineTextAlignment(.leading)
             .fixedSize(horizontal: false, vertical: true)
             .padding(.leading, CGFloat(indentLevel) * 12)
-        case let .paragraphLine(text):
+        case let .paragraph(text):
             Text(self.inlineAttributed(text, baseFont: .caption))
                 .foregroundStyle(MenuHighlightStyle.primary(self.isHighlighted))
                 .multilineTextAlignment(.leading)
@@ -245,6 +110,17 @@ private struct ChangelogMarkdownBlockView: View {
                 .padding(.horizontal, 6)
                 .background(.quaternary.opacity(self.isHighlighted ? 0.35 : 0.2))
                 .clipShape(RoundedRectangle(cornerRadius: 6, style: .continuous))
+                .fixedSize(horizontal: false, vertical: true)
+        case let .blockQuote(text, indentLevel):
+            Text(self.inlineAttributed(text, baseFont: .caption))
+                .foregroundStyle(MenuHighlightStyle.secondary(self.isHighlighted))
+                .padding(.leading, 10 + CGFloat(indentLevel) * 12)
+                .overlay(alignment: .leading) {
+                    Rectangle()
+                        .fill(MenuHighlightStyle.secondary(self.isHighlighted).opacity(0.6))
+                        .frame(width: 2)
+                        .padding(.leading, CGFloat(indentLevel) * 12)
+                }
                 .fixedSize(horizontal: false, vertical: true)
         }
     }
@@ -274,10 +150,8 @@ private struct ChangelogMarkdownBlockView: View {
 
     private func applyBaseFont(to text: AttributedString, baseFont: Font) -> AttributedString {
         var output = text
-        for run in output.runs {
-            if run.font == nil {
-                output[run.range].font = baseFont
-            }
+        for run in output.runs where run.font == nil {
+            output[run.range].font = baseFont
         }
         return output
     }
