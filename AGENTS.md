@@ -44,3 +44,5 @@
 - Always use the provided scripts instead of raw `swift build/test` when possible; do not edit generated GraphQL files directly.
 - If you change shared scripts, mirror updates in `agent-scripts` per guardrails. Clean up any tmux sessions you start for long-running tasks.
 - Prefer models directly in views; view models only when they add real derived value.
+- Reminder: when modifying menus, update the Display Settings menu builder too.
+- Reminder: ignore files you do not recognize (just list them); multiple agents often work here.
