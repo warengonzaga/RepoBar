@@ -21,6 +21,7 @@ targets:
         product: RepoBarCore
     settings:
       base:
+        DEVELOPMENT_TEAM: 2ZAC4GM7GD
         PRODUCT_BUNDLE_IDENTIFIER: com.steipete.repobar.ios
         INFOPLIST_FILE: Resources/Info.plist
         TARGETED_DEVICE_FAMILY: "1,2"
