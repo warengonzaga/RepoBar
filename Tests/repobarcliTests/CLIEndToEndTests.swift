@@ -1,0 +1,87 @@
+import Commander
+import Darwin
+import Foundation
+@testable import repobarcli
+import Testing
+
+struct CLIEndToEndTests {
+    @Test
+    @MainActor
+    func markdownCommandRendersChangelogContent() async throws {
+        let url = try fixtureURL("ChangelogSample")
+        let output = try await runCLI([
+            "markdown",
+            url.path,
+            "--no-wrap",
+            "--no-color"
+        ])
+        #expect(output.contains("Unreleased"))
+        #expect(output.contains("- Added first change"))
+        #expect(output.contains("- Fixed second change"))
+    }
+
+    @Test
+    @MainActor
+    func changelogCommandParsesUnreleasedEntries() async throws {
+        let url = try fixtureURL("ChangelogSample")
+        let output = try await runCLI([
+            "changelog",
+            url.path,
+            "--release",
+            "v1.0.0",
+            "--json"
+        ])
+        let data = try #require(output.data(using: .utf8))
+        let decoded = try JSONDecoder().decode(ChangelogOutput.self, from: data)
+        #expect(decoded.sections.count == 2)
+        #expect(decoded.presentation?.title == "Changelog • Unreleased")
+        #expect(decoded.presentation?.badgeText == "2")
+    }
+}
+
+private func fixtureURL(_ name: String) throws -> URL {
+    guard let url = Bundle.module.url(forResource: name, withExtension: "md") else {
+        throw FixtureError.missing(name)
+    }
+    return url
+}
+
+private enum FixtureError: Error {
+    case missing(String)
+}
+
+@MainActor
+private func runCLI(_ args: [String]) async throws -> String {
+    let argv = CLIArgumentNormalizer.normalize(["repobar"] + args)
+    let program = Program(descriptors: [RepoBarRoot.descriptor()])
+    let invocation = try program.resolve(argv: argv)
+    var command = try RepoBarCLI.makeCommand(from: invocation)
+    return try await captureStdout {
+        try await command.run()
+    }
+}
+
+@MainActor
+private func captureStdout(_ work: () async throws -> Void) async throws -> String {
+    let pipe = Pipe()
+    let original = dup(STDOUT_FILENO)
+    dup2(pipe.fileHandleForWriting.fileDescriptor, STDOUT_FILENO)
+
+    do {
+        try await work()
+    } catch {
+        fflush(stdout)
+        dup2(original, STDOUT_FILENO)
+        close(original)
+        pipe.fileHandleForWriting.closeFile()
+        throw error
+    }
+
+    fflush(stdout)
+    dup2(original, STDOUT_FILENO)
+    close(original)
+    pipe.fileHandleForWriting.closeFile()
+
+    let data = pipe.fileHandleForReading.readDataToEndOfFile()
+    return String(decoding: data, as: UTF8.self)
+}
