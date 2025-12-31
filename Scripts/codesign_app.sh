@@ -102,15 +102,18 @@ if [ -d "$SPARKLE_FRAMEWORK" ]; then
   done
 fi
 
-log "Signing main binary"
-codesign --force --options runtime --timestamp --entitlements "$TMP_ENTITLEMENTS" --sign "$IDENTITY" "$APP_PATH/Contents/MacOS/RepoBar"
-
 log "Signing auxiliary binaries"
 for bin in "$APP_PATH/Contents/MacOS/"*; do
   if [ -f "$bin" ] && [ "$bin" != "$APP_PATH/Contents/MacOS/RepoBar" ]; then
     codesign --force --options runtime --timestamp --entitlements "$TMP_ENTITLEMENTS" --sign "$IDENTITY" "$bin"
   fi
 done
+
+# Sign nested binaries before the main executable; otherwise codesign can fail with
+# “code object is not signed at all” when it encounters an unsigned subcomponent
+# (e.g. `repobarcli`) while sealing the bundle.
+log "Signing main binary"
+codesign --force --options runtime --timestamp --entitlements "$TMP_ENTITLEMENTS" --sign "$IDENTITY" "$APP_PATH/Contents/MacOS/RepoBar"
 
 log "Signing app bundle"
 codesign --force --options runtime --timestamp --entitlements "$TMP_ENTITLEMENTS" --sign "$IDENTITY" "$APP_PATH"
