@@ -28,11 +28,16 @@ struct ChangelogMenuView: View {
                 Spacer(minLength: 0)
             }
 
-            MarkdownTextView(
-                markdown: self.content.markdown,
-                isHighlighted: self.isHighlighted
-            )
-            .frame(height: MenuStyle.changelogPreviewHeight)
+            ScrollView(.vertical) {
+                MarkdownTextView(
+                    markdown: self.content.markdown,
+                    isHighlighted: self.isHighlighted
+                )
+                .padding(.top, 2)
+                .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .frame(maxHeight: MenuStyle.changelogPreviewHeight)
+            .clipped()
 
             if self.content.isTruncated {
                 Text("Preview truncated")
