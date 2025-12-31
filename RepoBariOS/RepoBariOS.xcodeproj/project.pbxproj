@@ -23,6 +23,7 @@
 		77D804506AD7E74D5C847938 /* RepoBariOSApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = F000CC2F6DC230D5F7E73768 /* RepoBariOSApp.swift */; };
 		7A98978CA4B9380E36625C0D /* RepoListView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A6BDB645F79B05AA4E6D081 /* RepoListView.swift */; };
 		825AE4CE4B24F85651E6B04D /* RepoBarCore in Frameworks */ = {isa = PBXBuildFile; productRef = D74BFA436D25399AB8463C39 /* RepoBarCore */; };
+		31F8FBD47E8C40F39A3CD2E5 /* Kingfisher in Frameworks */ = {isa = PBXBuildFile; productRef = 4BF65B34BC514CB39BFB8D10 /* Kingfisher */; };
 		83B109981F44549DB4DB3D75 /* RepoDetailModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0D89DAEE5516C46C8BAC2A1C /* RepoDetailModel.swift */; };
 		85B2F5E4B5D4A76CA37B8D3C /* GlassStyles.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75D8389DE4F45804274941BA /* GlassStyles.swift */; };
 		8871EA5BB70B99440560589F /* RootView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19773282646A9A2DB727AF12 /* RootView.swift */; };
@@ -68,6 +69,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				31F8FBD47E8C40F39A3CD2E5 /* Kingfisher in Frameworks */,
 				825AE4CE4B24F85651E6B04D /* RepoBarCore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -207,6 +209,7 @@
 			);
 			name = RepoBariOS;
 			packageProductDependencies = (
+				4BF65B34BC514CB39BFB8D10 /* Kingfisher */,
 				D74BFA436D25399AB8463C39 /* RepoBarCore */,
 			);
 			productName = RepoBariOS;
@@ -233,6 +236,7 @@
 			mainGroup = 5E080CDAD2FC0EAAD766FEDE;
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
+				E49696FB5ECF42EC8376E0DD /* XCRemoteSwiftPackageReference "Kingfisher" */,
 				1EE30F4F720752374C32387A /* XCLocalSwiftPackageReference ".." */,
 			);
 			preferredProjectObjectVersion = 77;
@@ -469,7 +473,23 @@
 		};
 /* End XCLocalSwiftPackageReference section */
 
+/* Begin XCRemoteSwiftPackageReference section */
+		E49696FB5ECF42EC8376E0DD /* Kingfisher */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/onevcat/Kingfisher";
+			requirement = {
+				kind = upToNextMajorVersion;
+				minimumVersion = 8.6.2;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
 /* Begin XCSwiftPackageProductDependency section */
+		4BF65B34BC514CB39BFB8D10 /* Kingfisher */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = E49696FB5ECF42EC8376E0DD /* Kingfisher */;
+			productName = Kingfisher;
+		};
 		D74BFA436D25399AB8463C39 /* RepoBarCore */ = {
 			isa = XCSwiftPackageProductDependency;
 			productName = RepoBarCore;

@@ -41,7 +41,12 @@ struct RepoDetailView: View {
                         id: \.url,
                         emptyText: "No recent activity"
                     ) { event in
-                        LinkRow(title: event.title, subtitle: event.actor, date: event.date, url: event.url)
+                        Button {
+                            openURL(event.url)
+                        } label: {
+                            ActivityRow(event: event)
+                        }
+                        .buttonStyle(.plain)
                     }
                 } label: {
                     RepoDetailSectionRow(
@@ -63,7 +68,12 @@ struct RepoDetailView: View {
                         id: \.url,
                         emptyText: "No recent commits"
                     ) { commit in
-                        LinkRow(title: commit.message, subtitle: commit.authorLogin, date: commit.authoredAt, url: commit.url)
+                        Button {
+                            openURL(commit.url)
+                        } label: {
+                            CommitRow(commit: commit)
+                        }
+                        .buttonStyle(.plain)
                     }
                 } label: {
                     RepoDetailSectionRow(
@@ -86,7 +96,14 @@ struct RepoDetailView: View {
                         id: \.url,
                         emptyText: "No open pull requests"
                     ) { pr in
-                        LinkRow(title: "#\(pr.number) \(pr.title)", subtitle: pr.authorLogin, date: pr.updatedAt, url: pr.url)
+                        LinkRow(
+                            title: "#\(pr.number) \(pr.title)",
+                            subtitle: pr.authorLogin,
+                            date: pr.updatedAt,
+                            url: pr.url,
+                            avatarURL: pr.authorAvatarURL,
+                            placeholderSymbol: "person.fill"
+                        )
                     }
                 } label: {
                     RepoDetailSectionRow(
@@ -107,7 +124,14 @@ struct RepoDetailView: View {
                         id: \.url,
                         emptyText: "No open issues"
                     ) { issue in
-                        LinkRow(title: "#\(issue.number) \(issue.title)", subtitle: issue.authorLogin, date: issue.updatedAt, url: issue.url)
+                        LinkRow(
+                            title: "#\(issue.number) \(issue.title)",
+                            subtitle: issue.authorLogin,
+                            date: issue.updatedAt,
+                            url: issue.url,
+                            avatarURL: issue.authorAvatarURL,
+                            placeholderSymbol: "person.fill"
+                        )
                     }
                 } label: {
                     RepoDetailSectionRow(
@@ -130,7 +154,14 @@ struct RepoDetailView: View {
                         id: \.url,
                         emptyText: "No releases"
                     ) { release in
-                        LinkRow(title: release.name, subtitle: release.tag, date: release.publishedAt, url: release.url)
+                        LinkRow(
+                            title: release.name,
+                            subtitle: release.tag,
+                            date: release.publishedAt,
+                            url: release.url,
+                            avatarURL: release.authorAvatarURL,
+                            placeholderSymbol: "tag.fill"
+                        )
                     }
                 } label: {
                     RepoDetailSectionRow(
@@ -151,7 +182,14 @@ struct RepoDetailView: View {
                         id: \.url,
                         emptyText: "No workflow runs"
                     ) { run in
-                        LinkRow(title: run.name, subtitle: run.branch ?? "", date: run.updatedAt, url: run.url)
+                        LinkRow(
+                            title: run.name,
+                            subtitle: run.branch ?? "",
+                            date: run.updatedAt,
+                            url: run.url,
+                            avatarURL: run.actorAvatarURL,
+                            placeholderSymbol: "person.fill"
+                        )
                     }
                 } label: {
                     RepoDetailSectionRow(
@@ -174,7 +212,14 @@ struct RepoDetailView: View {
                         id: \.url,
                         emptyText: "No discussions"
                     ) { discussion in
-                        LinkRow(title: discussion.title, subtitle: discussion.authorLogin, date: discussion.updatedAt, url: discussion.url)
+                        LinkRow(
+                            title: discussion.title,
+                            subtitle: discussion.authorLogin,
+                            date: discussion.updatedAt,
+                            url: discussion.url,
+                            avatarURL: discussion.authorAvatarURL,
+                            placeholderSymbol: "person.fill"
+                        )
                     }
                 } label: {
                     RepoDetailSectionRow(
@@ -199,7 +244,9 @@ struct RepoDetailView: View {
                             title: contributor.login,
                             subtitle: "\(contributor.contributions) contributions",
                             date: nil,
-                            url: contributor.url
+                            url: contributor.url,
+                            avatarURL: contributor.avatarURL,
+                            placeholderSymbol: "person.fill"
                         )
                     }
                 } label: {
@@ -364,30 +411,43 @@ private struct LinkRow: View {
     let subtitle: String?
     let date: Date?
     let url: URL?
+    var avatarURL: URL? = nil
+    var placeholderSymbol: String? = nil
     @Environment(\.openURL) private var openURL
 
     var body: some View {
         Button {
             if let url { openURL(url) }
         } label: {
-            VStack(alignment: .leading, spacing: 4) {
-                Text(title)
-                    .font(.subheadline)
-                    .lineLimit(2)
-                HStack(spacing: 6) {
-                    if let subtitle, !subtitle.isEmpty {
-                        Text(subtitle)
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-                    if let date {
-                        Text(RelativeFormatter.string(from: date, relativeTo: Date()))
-                            .font(.caption2)
-                            .foregroundStyle(.secondary)
+            HStack(alignment: .top, spacing: 12) {
+                if avatarURL != nil || placeholderSymbol != nil {
+                    AvatarView(
+                        url: avatarURL,
+                        symbolName: placeholderSymbol ?? "person.fill",
+                        size: 22
+                    )
+                }
+                VStack(alignment: .leading, spacing: 4) {
+                    Text(title)
+                        .font(.subheadline)
+                        .foregroundStyle(.primary)
+                        .lineLimit(2)
+                    HStack(spacing: 6) {
+                        if let subtitle, !subtitle.isEmpty {
+                            Text(subtitle)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        if let date {
+                            Text(RelativeFormatter.string(from: date, relativeTo: Date()))
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                        }
                     }
                 }
             }
         }
+        .buttonStyle(.plain)
     }
 }
 
@@ -453,6 +513,7 @@ private struct RepoDetailListView<Item, ID: Hashable, Row: View>: View {
         }
         .scrollContentBackground(.hidden)
         .background(GlassBackground())
+        .listStyle(.plain)
         .navigationTitle(title)
     }
 }

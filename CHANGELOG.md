@@ -19,8 +19,10 @@
 - iOS: add activity/commit icons in the activity list.
 - iOS: add a repo detail hierarchy with category drill-down lists.
 - iOS: declare iPad orientations to silence Xcode build warnings.
+- iOS: show avatars in activity and repo detail lists.
 - Fix CLI: allow invoking bundled `repobarcli` directly (argv0 normalization).
 - Fix CLI auth refresh: show actionable error when refresh response is missing tokens.
+- CLI: add markdown rendering command backed by Swiftdansi.
 - Add Settings installer to link `repobar` CLI into common Homebrew paths.
 - Add Display settings to reorder/hide main menu and repo submenu items (reset to defaults included).
 - Make Display reset action destructive and stabilize spacing for rows without subtitles.
