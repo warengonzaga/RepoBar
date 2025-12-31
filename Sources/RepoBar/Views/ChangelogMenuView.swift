@@ -129,8 +129,9 @@ private enum ChangelogMarkdownPreviewParser {
                 continue
             }
 
-            if case .listItem(let marker, let text, let indentLevel)? = blocks.last,
-               self.leadingIndentWidth(line) >= (indentLevel + 1) * 2 {
+            if case let .listItem(marker, text, indentLevel)? = blocks.last,
+               self.leadingIndentWidth(line) >= (indentLevel + 1) * 2
+            {
                 blocks[blocks.count - 1] = .listItem(
                     marker: marker,
                     text: text + "\n" + trimmed,
@@ -251,11 +252,11 @@ private struct ChangelogMarkdownBlockView: View {
     private func headingFont(_ level: Int) -> Font {
         switch level {
         case 1:
-            return .system(size: 12, weight: .semibold)
+            .system(size: 12, weight: .semibold)
         case 2:
-            return .system(size: 11, weight: .semibold)
+            .system(size: 11, weight: .semibold)
         default:
-            return .caption.weight(.semibold)
+            .caption.weight(.semibold)
         }
     }
 

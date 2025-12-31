@@ -64,7 +64,8 @@ final class ChangelogMenuCoordinator {
             guard let self else { return }
             let now = Date()
             if let cached = self.cache[fullName],
-               now.timeIntervalSince(cached.fetchedAt) <= AppLimits.Changelog.cacheTTL {
+               now.timeIntervalSince(cached.fetchedAt) <= AppLimits.Changelog.cacheTTL
+            {
                 self.menuBuilder.updateChangelogRow(fullName: fullName, releaseTag: releaseTag)
                 return
             }

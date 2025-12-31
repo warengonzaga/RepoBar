@@ -40,6 +40,7 @@ struct MenuSignatureTests {
                 contributors: nil
             ),
             changelogPresentation: nil,
+            changelogHeadline: nil,
             isPinned: false
         )
 
@@ -74,6 +75,7 @@ struct MenuSignatureTests {
                 contributors: nil
             ),
             changelogPresentation: nil,
+            changelogHeadline: nil,
             isPinned: false
         )
 
