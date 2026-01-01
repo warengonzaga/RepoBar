@@ -13,10 +13,7 @@ struct GeneralSettingsView: View {
 
     private var showOnlyMyRepos: Bool {
         guard let username = self.normalizedCurrentUsername else { return false }
-        let ownerFilter = self.session.settings.repoList.ownerFilter
-            .map { $0.lowercased() }
-            .filter { !$0.isEmpty }
-        return ownerFilter == [username]
+        return OwnerFilter.normalize(self.session.settings.repoList.ownerFilter) == [username]
     }
 
     private func toggleShowOnlyMyRepos(_ enabled: Bool) {
