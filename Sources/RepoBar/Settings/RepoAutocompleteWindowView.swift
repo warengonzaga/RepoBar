@@ -110,14 +110,15 @@ struct RepoAutocompleteWindowView: NSViewRepresentable {
             let resolvedWidth = max(420, width + 160)
             let maxVisibleRows = min(AppLimits.Autocomplete.settingsSearchLimit, 10)
             let visibleRows = min(maxVisibleRows, suggestions.count)
-            let rowHeight: CGFloat = 48
+            let rowHeight: CGFloat = 52
             let dividerHeight: CGFloat = 1
             let resolvedHeight = (rowHeight * CGFloat(visibleRows) + dividerHeight * CGFloat(max(0, visibleRows - 1))).rounded(.up)
             let content = RepoAutocompleteListView(
                 suggestions: suggestions,
                 selectedIndex: selectedIndex,
                 keyboardNavigating: keyboardNavigating,
-                height: resolvedHeight
+                height: resolvedHeight,
+                rowHeight: rowHeight
             ) { [weak self] fullName in
                 self?.onSelect(fullName)
                 self?.isShowing = false
@@ -125,7 +126,6 @@ struct RepoAutocompleteWindowView: NSViewRepresentable {
             .frame(width: resolvedWidth)
             .frame(height: resolvedHeight)
             .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 6, style: .continuous))
-            .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
             .overlay(
                 RoundedRectangle(cornerRadius: 6, style: .continuous)
                     .stroke(Color.primary.opacity(0.1), lineWidth: 1)
@@ -135,9 +135,10 @@ struct RepoAutocompleteWindowView: NSViewRepresentable {
 
             let viewFrame = view.convert(view.bounds, to: nil)
             let screenFrame = parentWindow.convertToScreen(viewFrame)
+            let topY = screenFrame.minY - 6
             let windowFrame = NSRect(
                 x: screenFrame.minX,
-                y: screenFrame.minY - (resolvedHeight + 4),
+                y: topY - resolvedHeight,
                 width: resolvedWidth,
                 height: resolvedHeight
             )
@@ -177,6 +178,7 @@ private struct RepoAutocompleteListView: View {
     @Binding var selectedIndex: Int
     let keyboardNavigating: Bool
     let height: CGFloat
+    let rowHeight: CGFloat
     let onSelect: (String) -> Void
     @State private var mouseHoverTriggered = false
 
@@ -191,6 +193,7 @@ private struct RepoAutocompleteListView: View {
                         ) {
                             self.onSelect(repo.fullName)
                         }
+                        .frame(height: self.rowHeight)
                         .id(index)
                         .onHover { hovering in
                             if hovering {
