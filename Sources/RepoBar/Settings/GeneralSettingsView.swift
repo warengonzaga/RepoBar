@@ -6,29 +6,22 @@ struct GeneralSettingsView: View {
     @Bindable var session: Session
     let appState: AppState
 
-    private var showOnlyMyRepos: Bool {
-        guard let username = self.currentUsername() else { return false }
-        return self.session.settings.repoList.ownerFilter.contains(username.lowercased())
+    private var normalizedCurrentUsername: String? {
+        guard case let .loggedIn(user) = self.session.account else { return nil }
+        return user.username.lowercased()
     }
 
-    private func currentUsername() -> String? {
-        if case let .loggedIn(user) = self.session.account {
-            return user.username
-        }
-        return nil
+    private var showOnlyMyRepos: Bool {
+        guard let username = self.normalizedCurrentUsername else { return false }
+        let ownerFilter = self.session.settings.repoList.ownerFilter
+            .map { $0.lowercased() }
+            .filter { !$0.isEmpty }
+        return ownerFilter == [username]
     }
 
     private func toggleShowOnlyMyRepos(_ enabled: Bool) {
-        guard let username = self.currentUsername() else { return }
-        let normalizedUsername = username.lowercased()
-
-        if enabled {
-            if !self.session.settings.repoList.ownerFilter.contains(normalizedUsername) {
-                self.session.settings.repoList.ownerFilter = [normalizedUsername]
-            }
-        } else {
-            self.session.settings.repoList.ownerFilter.removeAll { $0.lowercased() == normalizedUsername }
-        }
+        guard let username = self.normalizedCurrentUsername else { return }
+        self.session.settings.repoList.ownerFilter = enabled ? [username] : []
 
         self.appState.persistSettings()
         self.appState.requestRefresh(cancelInFlight: true)
@@ -110,10 +103,11 @@ struct GeneralSettingsView: View {
                         get: { self.showOnlyMyRepos },
                         set: { self.toggleShowOnlyMyRepos($0) }
                     ))
+                    .disabled(self.normalizedCurrentUsername == nil)
                 } header: {
                     Text("Repositories")
                 } footer: {
-                    Text("Filters apply to repo lists and search. 'Show only my repositories' hides repos from organizations.")
+                    Text("Filters apply to repo lists and search. 'Show only my repositories' hides repos owned by organizations and other users.")
                 }
             }
             .formStyle(.grouped)
