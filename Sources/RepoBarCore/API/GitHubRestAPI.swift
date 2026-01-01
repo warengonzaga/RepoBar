@@ -104,6 +104,7 @@ struct GitHubRestAPI: Sendable {
     func recentActivity(owner: String, name: String, limit: Int) async throws -> ActivitySnapshot {
         let token = try await tokenProvider()
         let baseURL = await apiHost()
+        let webHost = self.webHostURL(from: baseURL)
         var components = URLComponents(
             url: baseURL.appending(path: "/repos/\(owner)/\(name)/events"),
             resolvingAgainstBaseURL: false
@@ -112,7 +113,7 @@ struct GitHubRestAPI: Sendable {
         let (data, _) = try await authorizedGet(url: components.url!, token: token)
         let events = try GitHubDecoding.decode([RepoEvent].self, from: data)
         let mapped = events.map { event in
-            (event: event, activity: event.activityEvent(owner: owner, name: name))
+            (event: event, activity: event.activityEvent(owner: owner, name: name, webHost: webHost))
         }
         let limited = Array(mapped.prefix(max(limit, 0)))
         let preferred = limited.first(where: { $0.event.hasRichPayload })?.activity
@@ -120,6 +121,14 @@ struct GitHubRestAPI: Sendable {
             events: limited.map(\.activity),
             latest: preferred ?? limited.first?.activity
         )
+    }
+
+    private func webHostURL(from apiHost: URL) -> URL {
+        var components = URLComponents()
+        components.scheme = apiHost.scheme ?? "https"
+        let rawHost = apiHost.host ?? "github.com"
+        components.host = rawHost == "api.github.com" ? "github.com" : rawHost
+        return components.url ?? URL(string: "https://github.com")!
     }
 
     func trafficStats(owner: String, name: String) async throws -> TrafficStats? {
