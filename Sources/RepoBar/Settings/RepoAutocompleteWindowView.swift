@@ -47,6 +47,8 @@ struct RepoAutocompleteWindowView: NSViewRepresentable {
         @Binding var isShowing: Bool
         @Binding var selectedIndex: Int
         private nonisolated(unsafe) var clickMonitor: Any?
+        private var anchorTopY: CGFloat?
+        private var anchorLeftX: CGFloat?
 
         init(onSelect: @escaping (String) -> Void, isShowing: Binding<Bool>, selectedIndex: Binding<Int>) {
             self.onSelect = onSelect
@@ -135,14 +137,25 @@ struct RepoAutocompleteWindowView: NSViewRepresentable {
 
             let viewFrame = view.convert(view.bounds, to: nil)
             let screenFrame = parentWindow.convertToScreen(viewFrame)
-            let topY = screenFrame.minY - 6
+            let computedTopY = (screenFrame.minY - 6).rounded(.toNearestOrAwayFromZero)
+            let computedLeftX = screenFrame.minX.rounded(.toNearestOrAwayFromZero)
+            if self.anchorTopY == nil || abs((self.anchorTopY ?? computedTopY) - computedTopY) > 1 {
+                self.anchorTopY = computedTopY
+            }
+            if self.anchorLeftX == nil || abs((self.anchorLeftX ?? computedLeftX) - computedLeftX) > 1 {
+                self.anchorLeftX = computedLeftX
+            }
+
+            let topY = self.anchorTopY ?? computedTopY
+            let leftX = self.anchorLeftX ?? computedLeftX
             let windowFrame = NSRect(
-                x: screenFrame.minX,
+                x: leftX,
                 y: topY - resolvedHeight,
                 width: resolvedWidth,
                 height: resolvedHeight
             )
-            window.setFrame(windowFrame, display: false, animate: true)
+            let shouldAnimate = resolvedHeight > window.frame.height
+            window.setFrame(windowFrame, display: false, animate: shouldAnimate)
 
             if window.parent == nil {
                 parentWindow.addChildWindow(window, ordered: .above)
@@ -162,6 +175,8 @@ struct RepoAutocompleteWindowView: NSViewRepresentable {
         @MainActor
         func hideDropdown() {
             self.cleanupClickMonitor()
+            self.anchorTopY = nil
+            self.anchorLeftX = nil
 
             if let window = dropdownWindow {
                 if let parent = window.parent {
