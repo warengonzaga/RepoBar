@@ -8,6 +8,7 @@ struct UserSettingsCoverageTests {
         #expect(LocalProjectsRefreshInterval.oneMinute.seconds == 60)
         #expect(LocalProjectsRefreshInterval.fifteenMinutes.seconds == 900)
         #expect(LocalProjectsRefreshInterval.twoMinutes.label == "2 minutes")
+        #expect(LocalProjectsSettings().maxDepth == LocalProjectsConstants.defaultMaxDepth)
 
         #expect(GhosttyOpenMode.newWindow.label == "New Window")
         #expect(GhosttyOpenMode.tab.label == "Tab")
