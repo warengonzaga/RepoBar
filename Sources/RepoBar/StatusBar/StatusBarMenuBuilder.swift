@@ -316,7 +316,8 @@ final class StatusBarMenuBuilder {
         var models: [RepositoryDisplayModel] = []
         for localStatus in localRepos {
             guard let fullName = localStatus.fullName?.lowercased(),
-                  let existingModel = displayIndex[fullName] else {
+                  let existingModel = displayIndex[fullName]
+            else {
                 let model = RepositoryDisplayModel(localStatus: localStatus, now: now)
                 models.append(model)
                 continue
