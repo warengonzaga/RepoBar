@@ -5,7 +5,7 @@ struct MenuRepoFiltersView: View {
     @Bindable var session: Session
 
     private var availableFilters: [MenuRepoSelection] {
-        if session.account.isLoggedIn {
+        if self.session.account.isLoggedIn {
             return MenuRepoSelection.allCases
         }
         // Only local filter when logged out (All/Pinned/Work require GitHub)

@@ -49,7 +49,7 @@ struct RepoBarApp: App {
             self.menuManager = StatusBarMenuManager(appState: self.appState)
         }
         guard let menuManager = self.menuManager, menuManager.isAttached == false else { return }
-        for _ in 0..<10 {
+        for _ in 0 ..< 10 {
             if let statusItem = StatusItemLocator.locate() {
                 self.logMenuEvent("statusItem fallback attach")
                 menuManager.attachMainMenu(to: statusItem)

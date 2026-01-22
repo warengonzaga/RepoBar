@@ -84,7 +84,7 @@ struct RepositoryDisplayModel: Identifiable, Equatable {
         ]
     }
 
-    init(localStatus: LocalRepoStatus, now: Date = Date()) {
+    init(localStatus: LocalRepoStatus, now _: Date = Date()) {
         let placeholderRepo = Repository(
             id: "local:\(localStatus.path.path)",
             name: localStatus.name,

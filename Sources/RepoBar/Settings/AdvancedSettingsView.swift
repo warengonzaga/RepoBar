@@ -109,7 +109,7 @@ struct AdvancedSettingsView: View {
                     Text("Scan depth")
                     Spacer()
                     Picker("", selection: self.$session.settings.localProjects.maxDepth) {
-                        ForEach(1...6, id: \.self) { depth in
+                        ForEach(1 ... 6, id: \.self) { depth in
                             Text("\(depth) level\(depth == 1 ? "" : "s")")
                                 .tag(depth)
                         }

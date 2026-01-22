@@ -74,7 +74,7 @@ struct LoopbackServerTests {
             Issue.record("Expected port in use error")
         } catch let error as LoopbackServerError {
             switch error {
-            case .portInUse(let errorPort):
+            case let .portInUse(errorPort):
                 #expect(errorPort == port)
             case .bindFailed:
                 Issue.record("Expected portInUse error")

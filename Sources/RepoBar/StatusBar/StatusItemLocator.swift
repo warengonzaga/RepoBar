@@ -3,11 +3,10 @@ import AppKit
 @MainActor
 enum StatusItemLocator {
     static func locate() -> NSStatusItem? {
-        let statusItemClassName: String
-        if #available(macOS 26.0, *) {
-            statusItemClassName = "NSSceneStatusItem"
+        let statusItemClassName = if #available(macOS 26.0, *) {
+            "NSSceneStatusItem"
         } else {
-            statusItemClassName = "NSStatusItem"
+            "NSStatusItem"
         }
 
         return NSApp.windows

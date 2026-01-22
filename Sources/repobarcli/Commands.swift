@@ -484,7 +484,8 @@ struct ImportGHTokenCommand: CommanderRunnableCommand {
 
         let data = pipe.fileHandleForReading.readDataToEndOfFile()
         guard let tokenString = String(data: data, encoding: .utf8)?.trimmingCharacters(in: .whitespacesAndNewlines),
-              !tokenString.isEmpty else {
+              !tokenString.isEmpty
+        else {
             throw ValidationError("No token returned from gh CLI. Please run 'gh auth login' first.")
         }
 

@@ -188,7 +188,7 @@ private extension PATAuthenticatorTests {
         return config
     }
 
-    static func taggedSession(_ session: URLSession, handlerID: String) -> URLSession {
+    static func taggedSession(_: URLSession, handlerID: String) -> URLSession {
         // Create a new session with the handler ID embedded
         let config = URLSessionConfiguration.ephemeral
         config.protocolClasses = [MockURLProtocol.self]

@@ -9,10 +9,10 @@ public enum LoopbackServerError: LocalizedError {
 
     public var errorDescription: String? {
         switch self {
-        case .portInUse(let port):
-            return "Port \(port) is already in use. This may be caused by a previous login attempt that didn't complete. Try again in a few seconds or choose a different port."
-        case .bindFailed(let port, let underlying):
-            return "Failed to bind to port \(port): \(underlying.localizedDescription)"
+        case let .portInUse(port):
+            "Port \(port) is already in use. This may be caused by a previous login attempt that didn't complete. Try again in a few seconds or choose a different port."
+        case let .bindFailed(port, underlying):
+            "Failed to bind to port \(port): \(underlying.localizedDescription)"
         }
     }
 }
