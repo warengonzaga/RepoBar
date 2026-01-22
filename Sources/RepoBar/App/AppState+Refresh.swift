@@ -253,6 +253,10 @@ extension AppState {
             self.session.globalActivityError = nil
             self.session.globalCommitEvents = []
             self.session.globalCommitError = nil
+            // Auto-select local filter when logged out (other filters require GitHub)
+            if self.session.menuRepoSelection != .local {
+                self.session.menuRepoSelection = .local
+            }
         }
     }
 
@@ -277,7 +281,7 @@ extension AppState {
         let models = repos.map { repo in
             RepositoryDisplayModel(repo: repo, localStatus: localIndex.status(for: repo), now: now)
         }
-        let index = Dictionary(uniqueKeysWithValues: models.map { ($0.title, $0) })
+        let index = Dictionary(uniqueKeysWithValues: models.map { ($0.title.lowercased(), $0) })
         await MainActor.run {
             self.session.menuDisplayIndex = index
         }
@@ -315,7 +319,7 @@ extension AppState {
                         now: capturedAt
                     )
                 }
-                self.session.menuDisplayIndex = Dictionary(uniqueKeysWithValues: models.map { ($0.title, $0) })
+                self.session.menuDisplayIndex = Dictionary(uniqueKeysWithValues: models.map { ($0.title.lowercased(), $0) })
             }
         }
     }
